@@ -1,5 +1,10 @@
 # 学习基础设施变更记录
 
+## 2026-08-31
+
+- 新增 `docs/learning/java-review-extracted.md`，提炼 Java 版黑马点评复盘中的 Redis、缓存、登录、秒杀、Feed、GEO、签到和 UV 重点，并补充当前 Go 项目文件映射与待验证项。
+- 更新 `docs/learning/README.md`，增加 Java 版复盘提炼文档入口。
+
 ## 2026-08-28
 
 - 新增 `AGENTS.md`，定义问题驱动、源码优先、增量沉淀的 Agent 协作规则。

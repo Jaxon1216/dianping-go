@@ -16,7 +16,11 @@
 
 ## 学习资料入口
 
-- 学习总览、用户画像、讲解契约和工具：[docs/learning/README.md](docs/learning/README.md)
-- 项目地图、路线和模块状态：[docs/learning/project.md](docs/learning/project.md)
-- 主题笔记与索引：[docs/learning/notes.md](docs/learning/notes.md)
-- 变更记录：[docs/learning/changelog.md](docs/learning/changelog.md)
+- [https://bytedance.larkoffice.com/docx/F1ROdFBwGobi9bxwAjwcphvpnxd 记录学习内容](https://bytedance.larkoffice.com/docx/F1ROdFBwGobi9bxwAjwcphvpnxd)
+- 这个是本项目原版，java版的复盘，我感觉很详细：[docs/learning/java-review-extracted.md](https://kcnebgoczud9.feishu.cn/wiki/A2X4wuqX6iEbkmk41L9cAtminYo)
+
+* 学习总览、用户画像、讲解契约和工具：[docs/learning/README.md](docs/learning/README.md)
+* 项目地图、路线和模块状态：[docs/learning/project.md](docs/learning/project.md)
+* 主题笔记与索引：[docs/learning/notes.md](docs/learning/notes.md)
+* 变更记录：[docs/learning/changelog.md](docs/learning/changelog.md)
+

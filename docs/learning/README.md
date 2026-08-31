@@ -8,6 +8,7 @@
 2. 需要理解仓库、路线或模块完成度时看 [project.md](project.md)。
 3. 需要复习已确认结论时看 [notes.md](notes.md)。
 4. 基础设施变化看 [changelog.md](changelog.md)。
+5. 需要参考 Java 版黑马点评复盘时看 [java-review-extracted.md](java-review-extracted.md)。
 
 ## 学习者画像
 
