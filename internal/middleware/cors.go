@@ -1,8 +1,11 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	// 这个net/http 是啥呀，为什么在他后面加 // 会让本文件灰色字体一起改动？
+	// 【answer】net/http 是 Go 标准库的 HTTP 包；这里使用 http.StatusNoContent 返回 204。// 只会注释本行，不会改变后续代码的语义，灰色通常是 IDE 的注释或未使用提示。
 )
 
 func CORSMiddleware() gin.HandlerFunc {
