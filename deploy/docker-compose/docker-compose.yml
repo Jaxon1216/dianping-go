@@ -4,6 +4,7 @@ services:
     hostname: mysql
     container_name: mysql
     ports:
+      # 宿主机 3306 -> MySQL 容器 3306；冒号左边是宿主机端口。
       - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=123
@@ -16,6 +17,7 @@ services:
     hostname: redis
     container_name: redis
     ports:
+      # 宿主机 6379 -> Redis 容器 6379。
       - "6379:6379"
     command: [ "redis-server", "--requirepass 123321" ]
 
@@ -37,6 +39,7 @@ services:
     image: nginx:alpine
     container_name: nginx
     ports:
+      # 宿主机 8080 -> Nginx 容器 8080；外部入口通常先访问这里。
       - "8080:8080"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro

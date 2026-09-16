@@ -31,8 +31,15 @@ type UserHandler struct {
 // @Success 200 {object} v1.Response
 // @Router /user/code [post]
 func (h *UserHandler) SendCode(ctx *gin.Context) {
+	// var 声明一个变量。这里 req 的类型是 v1.SendCodeReq，
+	// 初始值是该 struct 的零值，之后由 ShouldBindQuery 填充。
 	var req v1.SendCodeReq
+
+	// 从 URL 的 Query 参数中读取数据，例如：
+	// POST /user/code?phone=13800138000
+	// &req 表示把 req 的地址传给绑定函数，让函数直接修改 req。
 	if err := ctx.ShouldBindQuery(&req); err != nil {
+		// Go 常见写法：调用函数、同时声明 err，并立即判断错误。
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}

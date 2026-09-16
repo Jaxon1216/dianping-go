@@ -41,11 +41,20 @@ func WithServerPort(port int) Option {
 }
 
 func (s *Server) Start(context.Context) error {
+	// 【启动阶段：真正启动 HTTP 服务】
+	// App.Run 会调用这个 Start 方法。前面的路由注册只是“准备规则”，
+	// 到这里才创建标准库 HTTP Server 并开始监听端口。
+
+	// 这里创建的是 Go 标准库的 HTTP Server。
+	// s.host 和 s.port 来自 config/local.yml，拼成例如 127.0.0.1:8081。
 	s.httpSrv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.host, s.port),
+		// Server 嵌入了 *gin.Engine，所以它可以作为 HTTP Handler 接收请求。
 		Handler: s,
 	}
 
+	// ListenAndServe 来自 Go 标准库 net/http 包，不是本项目自定义的方法。
+	// 它会绑定 Addr 端口并持续等待客户端请求；收到请求后交给 Handler。
 	if err := s.httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		s.logger.Sugar().Fatalf("listen: %s\n", err)
 	}

@@ -1,7 +1,9 @@
 env: local
 
 http:
+  # Go 应用进程监听的地址。127.0.0.1 表示只接受本机连接。
   host: 127.0.0.1
+  # Go 应用进程监听的端口。Docker 的 ports 是另一层：负责端口映射。
   port: 8081
 
 data:

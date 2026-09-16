@@ -36,6 +36,9 @@ func NewHTTPServer(
 	// 入参都是地址是么？*标识指针类型？ * 左侧空一格的是形参别名，那*右边的是什么？
 	// 【answer】这些参数的类型确实都是指针类型；左边是参数名，右边是类型，* 是类型的一部分，例如 logger 的类型是 *log.Logger。
 ) *http.Server {
+	// 【启动阶段：创建并配置 HTTP/Gin 服务】
+	// 这个函数运行在程序启动时，不是每个请求到来时运行。
+	// 它负责创建 Gin Engine、注册全局中间件和注册所有路由。
 	// conf viper是干啥的呀，看不懂这个函数在做什么
 	// 【answer】conf 是 Viper 配置对象，用 GetString/GetInt 读取 config/local.yml 或 config/prod.yml 中的配置。
 	if conf.GetString("env") == "prod" {
@@ -66,7 +69,7 @@ func NewHTTPServer(
 
 	// swagger doc
 	docs.SwaggerInfo.BasePath = "/v1" // 这一行是在干啥呀？
-// 【answer】docs.SwaggerInfo 是生成的 Swagger 配置；这行设置接口文档声明的基础路径为 /v1。
+	// 【answer】docs.SwaggerInfo 是生成的 Swagger 配置；这行设置接口文档声明的基础路径为 /v1。
 	s.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerfiles.Handler,
 		//ginSwagger.URL(fmt.Sprintf("http://localhost:%d/swagger/doc.json", conf.GetInt("app.http.port"))),
@@ -82,6 +85,12 @@ func NewHTTPServer(
 		middleware.RequestLogMiddleware(logger),
 		middleware.RefreshToken(rdb),
 	)
+
+	// 【启动阶段：全局 Middleware 注册完成】
+	// 这里先保存中间件执行规则；真正的请求到来后，Gin 才按顺序执行它们。
+	// 以上 Use 注册的是全局中间件：所有后续注册的路由都会先经过它们。
+	// 下面的 Group 只负责给路由拼接公共路径；是否需要登录，要看该 Group
+	// 是否额外调用 Use(middleware.Login())。
 
 	// ========== router ==========
 	// 看不太懂这个get的封装，看起来没有return啥东西？
@@ -128,11 +137,23 @@ func NewHTTPServer(
 
 		userRouter := s.Group("/user")
 		{
+			// 【启动阶段：Router 注册】
+			// Group 返回一个路由分组对象，不会处理请求，也不会返回 HTTP 响应。
+			// 这里的公共前缀是 /user。
+			// userRouter.Group("/") 的返回值仍然是一个路由分组对象，
+			// 这里只是把共同前缀 /user 继续保留下来。
 			noAuthRouter := userRouter.Group("/")
 			{
+				// 不带 Login 中间件：登录前也可以访问发送验证码和登录接口。
+				// 这两行是在注册“方法 + 路径 + Handler”的对应关系：
+				// POST /user/code  -> userHandler.SendCode
+				// POST /user/login -> userHandler.Login
 				noAuthRouter.POST("/code", userHandler.SendCode)
 				noAuthRouter.POST("/login", userHandler.Login)
 			}
+
+			// Use(middleware.Login()) 给这个分组追加局部中间件。
+			// 因此 /user/me 请求会先检查当前请求上下文里有没有用户。
 			authRouter := userRouter.Group("/").Use(middleware.Login())
 			{
 				authRouter.GET("/me", userHandler.Me)

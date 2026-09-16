@@ -10,10 +10,13 @@ import (
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// CORS 是浏览器的跨域安全机制。这里允许浏览器带上来源和凭据。
 		method := c.Request.Method
 		c.Header("Access-Control-Allow-Origin", c.GetHeader("Origin"))
 		c.Header("Access-Control-Allow-Credentials", "true")
 
+		// 浏览器发送复杂跨域请求前，可能先发 OPTIONS 预检请求。
+		// 预检只需要告诉浏览器允许的方法和请求头，不需要进入业务 Handler。
 		if method == "OPTIONS" {
 			c.Header("Access-Control-Allow-Methods", c.GetHeader("Access-Control-Request-Method"))
 			c.Header("Access-Control-Allow-Headers", c.GetHeader("Access-Control-Request-Headers"))
@@ -21,6 +24,8 @@ func CORSMiddleware() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
+
+		// 普通请求继续进入后面的中间件和路由 Handler。
 		c.Next()
 	}
 }
