@@ -5,6 +5,7 @@
 ## 索引
 
 - **Go**：package、接口、错误、context 和项目分层。
+  - 专题：[Go 基础 01：指针 / 接口 / nil / error / panic](notes/go-basics-01-pointer-interface-error.md)（第 1 轮对话沉淀，STAR 格式）。
 - **Gin/HTTP**：路由、中间件、请求和响应。
 - **MySQL/GORM**：SQL、GORM Gen、模型和查询。
 - **Redis**：数据结构、缓存、Lua 和 Stream。

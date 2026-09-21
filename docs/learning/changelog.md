@@ -1,6 +1,10 @@
 # 学习基础设施变更记录
 
-## 2026-08-31
+## 2026-09-20
+
+- 新增 `docs/learning/notes/go-basics-01-pointer-interface-error.md`，用 STAR 格式沉淀第 1 轮前置知识对话：`nil` 语义、`if err != nil`、多返回值按位置匹配、指针 vs 值、空指针 vs 野指针、handler 拦截并翻译 error、interface vs struct 与为何不写 `*`、panic 现象与 error 的区别。对照 `internal/service/user.go`、`internal/handler/user.go`、`api/v1/`、`internal/server/http.go`。
+- 更新 `docs/learning/notes.md` 索引，加入该专题入口。
+- 在 `internal/service/user.go` 的 `NewUserService` 上增补「隐式接口实现」教学注释（仅注释，未改逻辑）。
 
 - 新增 `docs/learning/java-review-extracted.md`，提炼 Java 版黑马点评复盘中的 Redis、缓存、登录、秒杀、Feed、GEO、签到和 UV 重点，并补充当前 Go 项目文件映射与待验证项。
 - 更新 `docs/learning/README.md`，增加 Java 版复盘提炼文档入口。

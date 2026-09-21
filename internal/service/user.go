@@ -63,6 +63,19 @@ type userService struct {
 	*Service
 }
 
+// NewUserService 演示 Go 的「隐式接口实现」（structural typing / duck typing）。
+//
+// 关键点：函数返回类型写的是接口 UserService，但 return 的却是具体结构体 *userService。
+// Go 没有、也不需要 Java/TS 那样的 `implements` 关键字来声明「谁实现了谁」。
+// 只要 *userService 定义齐了 UserService 接口要求的全部方法
+// （SendCode / Login / Me / QueryUserByID / Sign / SignCount），
+// 编译器就在这里自动检查并认定「*userService 满足 UserService」，检查不过则编译报错。
+//
+// 好处：上层（handler）只依赖接口 UserService，拿不到也不关心具体结构体 userService，
+// 将来替换实现或在测试里塞 mock，上层代码一行都不用改。
+//
+// 注意 & 的作用：userService 是 struct，用 &userService{...} 取地址得到 *userService（指针）；
+// 而返回类型 UserService 是接口，接口本身不加 *。
 func NewUserService(service *Service) UserService {
 	return &userService{
 		Service: service,
