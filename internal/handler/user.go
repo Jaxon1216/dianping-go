@@ -150,10 +150,10 @@ func (h *UserHandler) Sign(ctx *gin.Context) {
 // @Success 200 {object} v1.Response
 // @Router /user/sign/count [get]
 func (h *UserHandler) SignCount(ctx *gin.Context) {
-	err := h.userService.SignCount(ctx.Request.Context())
+	count, err := h.userService.SignCount(ctx.Request.Context())
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
-	v1.HandleSuccess(ctx, nil)
+	v1.HandleSuccess(ctx, count)
 }

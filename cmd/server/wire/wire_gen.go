@@ -30,6 +30,8 @@ func NewWire(viperViper *viper.Viper, logger *log.Logger) (*app.App, func(), err
 	serviceService := service.NewService(logger, viperViper, query, client, redsync)
 	blogService := service.NewBlogService(serviceService)
 	blogHandler := handler.NewBlogHandler(handlerHandler, blogService)
+	followService := service.NewFollowService(serviceService)
+	followHandler := handler.NewFollowHandler(handlerHandler, followService)
 	cacheClient := cache_client.NewCacheClientForShop(client)
 	shopService := service.NewShopService(serviceService, cacheClient)
 	shopHandler := handler.NewShopHandler(handlerHandler, shopService)
@@ -43,7 +45,7 @@ func NewWire(viperViper *viper.Viper, logger *log.Logger) (*app.App, func(), err
 	redisWorker := redis_worker.NewRedisWorker(client)
 	voucherOrderService := service.NewVoucherOrderService(serviceService, redisWorker)
 	voucherOrderHandler := handler.NewVoucherOrderHandler(handlerHandler, voucherOrderService)
-	httpServer := server.NewHTTPServer(logger, viperViper, client, blogHandler, shopHandler, shopTypeHandler, uploadHandler, userHandler, voucherHandler, voucherOrderHandler)
+	httpServer := server.NewHTTPServer(logger, viperViper, client, blogHandler, followHandler, shopHandler, shopTypeHandler, uploadHandler, userHandler, voucherHandler, voucherOrderHandler)
 	appApp := newApp(httpServer)
 	return appApp, func() {
 	}, nil
@@ -55,9 +57,9 @@ var cacheClientSet = wire.NewSet(cache_client.NewCacheClientForShop)
 
 var redisWorkerSet = wire.NewSet(redis_worker.NewRedisWorker)
 
-var serviceSet = wire.NewSet(service.NewDB, service.NewQuery, service.NewRedis, service.NewRedSync, service.NewService, service.NewBlogService, service.NewSeckillVoucherService, service.NewShopService, service.NewShopTypeService, service.NewUserService, service.NewVoucherService, service.NewVoucherOrderService)
+var serviceSet = wire.NewSet(service.NewDB, service.NewQuery, service.NewRedis, service.NewRedSync, service.NewService, service.NewBlogService, service.NewFollowService, service.NewSeckillVoucherService, service.NewShopService, service.NewShopTypeService, service.NewUserService, service.NewVoucherService, service.NewVoucherOrderService)
 
-var handlerSet = wire.NewSet(handler.NewHandler, handler.NewBlogHandler, handler.NewShopHandler, handler.NewShopTypeHandler, handler.NewUploadHandler, handler.NewUserHandler, handler.NewVoucherHandler, handler.NewVoucherOrderHandler)
+var handlerSet = wire.NewSet(handler.NewHandler, handler.NewBlogHandler, handler.NewFollowHandler, handler.NewShopHandler, handler.NewShopTypeHandler, handler.NewUploadHandler, handler.NewUserHandler, handler.NewVoucherHandler, handler.NewVoucherOrderHandler)
 
 var serverSet = wire.NewSet(server.NewHTTPServer)
 
@@ -65,5 +67,6 @@ var serverSet = wire.NewSet(server.NewHTTPServer)
 func newApp(
 	httpServer *http.Server,
 ) *app.App {
+
 	return app.NewApp(app.WithServer(httpServer), app.WithName("go-dianping"))
 }

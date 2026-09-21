@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	v1 "go-dianping/api/v1"
 	"go-dianping/internal/model"
 	"go-dianping/internal/service"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type BlogHandler struct {
@@ -235,5 +236,5 @@ func (h *BlogHandler) QueryBlogOfFollow(ctx *gin.Context) {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
-	v1.HandleListSuccess(ctx, blogs, len(blogs))
+	v1.HandleSuccess(ctx, blogs)
 }

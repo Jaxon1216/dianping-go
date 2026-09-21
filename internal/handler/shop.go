@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
-	"go-dianping/api/v1"
+	v1 "go-dianping/api/v1"
 	"go-dianping/internal/model"
 	"go-dianping/internal/service"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ShopHandler struct {
@@ -97,10 +98,10 @@ func (h *ShopHandler) QueryShopOfType(ctx *gin.Context) {
 		return
 	}
 
-	err := h.shopService.QueryShopOfType(ctx.Request.Context(), req.TypeId, req.Current, req.X, req.Y)
+	shops, err := h.shopService.QueryShopOfType(ctx.Request.Context(), req.TypeId, req.Current, req.X, req.Y)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
-	v1.HandleSuccess(ctx, nil)
+	v1.HandleSuccess(ctx, shops)
 }

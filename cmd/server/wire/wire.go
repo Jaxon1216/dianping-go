@@ -37,6 +37,7 @@ var serviceSet = wire.NewSet(
 
 	service.NewService,
 	service.NewBlogService,
+	service.NewFollowService,
 	service.NewSeckillVoucherService,
 	service.NewShopService,
 	service.NewShopTypeService,
@@ -50,6 +51,7 @@ var handlerSet = wire.NewSet(
 	// Handler 依赖 Service；因此 Service 必须先被创建。
 	handler.NewHandler,
 	handler.NewBlogHandler,
+	handler.NewFollowHandler,
 	handler.NewShopHandler,
 	handler.NewShopTypeHandler,
 	handler.NewUploadHandler,
