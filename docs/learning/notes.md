@@ -7,6 +7,7 @@
 - **Go**：package、接口、错误、context 和项目分层。
   - 专题：[Go 基础 01：指针 / 接口 / nil / error / panic](notes/go-basics-01-pointer-interface-error.md)（第 1 轮对话沉淀，STAR 格式）。
 - **Gin/HTTP**：路由、中间件、请求和响应。
+  - 专题：[前端请求全链路映射与 Go GMP 调度模型](notes/go-web-request-flow-and-gmp.md)（Express 映射，GMP 模型机制）。
 - **MySQL/GORM**：SQL、GORM Gen、模型和查询。
 - **Redis**：数据结构、缓存、Lua 和 Stream。
 - **并发**：goroutine、channel、锁和一致性。
