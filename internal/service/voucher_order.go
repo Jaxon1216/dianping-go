@@ -334,8 +334,8 @@ func (s *voucherOrderService) createVoucherOrder(voucherOrder *model.VoucherOrde
 		userId := voucherOrder.UserID
 
 		//	5.1. 查询订单
-		count, err := s.query.VoucherOrder.Where(s.query.VoucherOrder.UserID.Eq(userId)).
-			Where(s.query.VoucherOrder.VoucherID.Eq(voucherOrder.VoucherID)).Count()
+		count, err := tx.VoucherOrder.Where(tx.VoucherOrder.UserID.Eq(userId)).
+			Where(tx.VoucherOrder.VoucherID.Eq(voucherOrder.VoucherID)).Count()
 		if err != nil {
 			return err
 		}
@@ -346,10 +346,10 @@ func (s *voucherOrderService) createVoucherOrder(voucherOrder *model.VoucherOrde
 			return v1.ErrAlreadySeckill
 		}
 		//	6. 扣减库存，返回订单 id
-		info, err := s.query.SeckillVoucher.
-			Where(s.query.SeckillVoucher.VoucherID.Eq(voucherOrder.VoucherID)).
-			Where(s.query.SeckillVoucher.Stock.Gt(0)).
-			Update(s.query.SeckillVoucher.Stock, s.query.SeckillVoucher.Stock.Sub(1))
+		info, err := tx.SeckillVoucher.
+			Where(tx.SeckillVoucher.VoucherID.Eq(voucherOrder.VoucherID)).
+			Where(tx.SeckillVoucher.Stock.Gt(0)).
+			Update(tx.SeckillVoucher.Stock, tx.SeckillVoucher.Stock.Sub(1))
 		if err != nil {
 			return err
 		}
@@ -359,7 +359,7 @@ func (s *voucherOrderService) createVoucherOrder(voucherOrder *model.VoucherOrde
 			return v1.ErrInsufficientStock
 		}
 		//	7. 创建订单
-		if err := s.query.VoucherOrder.Save(voucherOrder); err != nil {
+		if err := tx.VoucherOrder.Save(voucherOrder); err != nil {
 			return err
 		}
 
