@@ -157,6 +157,8 @@ func NewHTTPServer(
 			authRouter := userRouter.Group("/").Use(middleware.Login())
 			{
 				authRouter.GET("/me", userHandler.Me)
+				authRouter.POST("/sign", userHandler.Sign)
+				authRouter.GET("/sign/count", userHandler.SignCount)
 			}
 		}
 

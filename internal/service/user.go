@@ -32,8 +32,10 @@ func (s *userService) SignCount(ctx context.Context) (int, error) {
 	if user == nil {
 		return 0, v1.ErrCanNotGetUser
 	}
-	dayOfMonth := time.Now().Month()
-	key := constants.RedisUserSignKey + strconv.FormatUint(*user.ID, 10)
+	now := time.Now()
+	keySuffix := now.Format("200601")
+	key := constants.RedisUserSignKey + strconv.FormatUint(*user.ID, 10) + ":" + keySuffix
+	dayOfMonth := now.Day()
 	result, err := s.rdb.BitField(ctx, key,
 		"GET", fmt.Sprintf("u%d", dayOfMonth), 0,
 	).Result()
@@ -213,7 +215,6 @@ func (s *userService) Sign(ctx context.Context) error {
 	now := time.Now()
 	keySuffix := now.Format("200601")
 	key := constants.RedisUserSignKey + strconv.FormatUint(*user.ID, 10) + ":" + keySuffix
-	dayOfMonth := now.Month()
-	s.rdb.SetBit(ctx, key, int64(dayOfMonth-1), 1)
-	return nil
+	dayOfMonth := now.Day()
+	return s.rdb.SetBit(ctx, key, int64(dayOfMonth-1), 1).Err()
 }
