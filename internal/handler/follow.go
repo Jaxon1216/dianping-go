@@ -43,7 +43,7 @@ func (h *FollowHandler) Follow(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.followService.Follow(ctx, req.FollowUserID, req.IsFollow); err != nil {
+	if err := h.followService.Follow(ctx.Request.Context(), req.FollowUserID, req.IsFollow); err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
@@ -69,7 +69,7 @@ func (h *FollowHandler) IsFollow(ctx *gin.Context) {
 		return
 	}
 
-	isFollow, err := h.followService.IsFollow(ctx, req.FollowUserID)
+	isFollow, err := h.followService.IsFollow(ctx.Request.Context(), req.FollowUserID)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
@@ -96,7 +96,7 @@ func (h *FollowHandler) FollowCommons(ctx *gin.Context) {
 		return
 	}
 
-	users, err := h.followService.FollowCommons(ctx, req.ID)
+	users, err := h.followService.FollowCommons(ctx.Request.Context(), req.ID)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return

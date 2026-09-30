@@ -54,6 +54,10 @@ func main() {
 			tag.Set("autoUpdateTime", "")
 			return tag
 		}),
+		gen.FieldGORMTag("images", func(tag field.GormTag) field.GormTag {
+			tag.Set("comment", "images separated by commas")
+			return tag
+		}),
 		gen.FieldJSONTagWithNS(func(columnName string) (tagContent string) {
 			return snakeToLowerCamel(columnName)
 		}),

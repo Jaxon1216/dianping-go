@@ -23,6 +23,8 @@ type UserService interface {
 	Login(ctx context.Context, req *v1.LoginReq) (*v1.LoginRespData, error)
 	Me(ctx context.Context) (*v1.SimpleUser, error)
 	QueryUserByID(ctx context.Context, userID uint64) (*v1.SimpleUser, error)
+	QueryUserInfoByID(ctx context.Context, userID uint64) (*model.UserInfo, error)
+	Logout(ctx context.Context, token string) error
 	Sign(ctx context.Context) error
 	SignCount(ctx context.Context) (int, error)
 }
@@ -191,6 +193,18 @@ func (s *userService) QueryUserByID(ctx context.Context, userID uint64) (*v1.Sim
 		NickName: user.NickName,
 		Icon:     user.Icon,
 	}, nil
+}
+
+func (s *userService) QueryUserInfoByID(ctx context.Context, userID uint64) (*model.UserInfo, error) {
+	userInfo, err := s.query.UserInfo.Where(s.query.UserInfo.UserID.Eq(userID)).First()
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return userInfo, err
+}
+
+func (s *userService) Logout(ctx context.Context, token string) error {
+	return s.rdb.Del(ctx, constants.RedisLoginUserKey+token).Err()
 }
 
 func (s *userService) createUserWithPhone(phone string) (*model.User, error) {

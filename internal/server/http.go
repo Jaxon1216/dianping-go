@@ -103,25 +103,29 @@ func NewHTTPServer(
 		// 下面这个花括号有啥说法么？
 		// 【answer】这是 Go 的普通代码块，用于按业务分组并限制局部变量作用域，不是 Gin 专用语法，通常也可以省略。
 		{
-			blogRouter.POST("", blogHandler.SaveBlog)
-			blogRouter.PUT("/like/:id", blogHandler.LikeBlog)
-			blogRouter.GET("/of/me", blogHandler.QueryMyBlog)
+			blogRouter.POST("", middleware.Login(), blogHandler.SaveBlog)
+			blogRouter.PUT("/like/:id", middleware.Login(), blogHandler.LikeBlog)
+			blogRouter.GET("/of/me", middleware.Login(), blogHandler.QueryMyBlog)
 			blogRouter.GET("/hot", blogHandler.QueryHotBlog)
+			blogRouter.GET("/likes/:id", blogHandler.QueryBlogLikes)
+			blogRouter.GET("/of/user", blogHandler.QueryBlogByUserID)
+			blogRouter.GET("/of/follow", middleware.Login(), blogHandler.QueryBlogOfFollow)
 			blogRouter.GET("/:id", blogHandler.QueryById)
-			blogRouter.GET("/of/follow", blogHandler.QueryBlogOfFollow)
 		}
 
 		followRouter := s.Group("/follow")
 		{
-			followRouter.PUT("/:id/:isFollow", followHandler.Follow)
+			followRouter.PUT("/:id/:isFollow", middleware.Login(), followHandler.Follow)
 			followRouter.GET("/or/not/:id", followHandler.IsFollow)
-			followRouter.GET("/common/:id", followHandler.FollowCommons)
+			followRouter.GET("/common/:id", middleware.Login(), followHandler.FollowCommons)
 		}
 
 		shopRouter := s.Group("/shop")
 		{
-			shopRouter.GET("/:id", shopHandler.QueryShopById)
 			shopRouter.PUT("", shopHandler.UpdateShop)
+			shopRouter.GET("/of/type", shopHandler.QueryShopOfType)
+			shopRouter.GET("/of/name", shopHandler.QueryShopByName)
+			shopRouter.GET("/:id", shopHandler.QueryShopById)
 		}
 
 		shopTypeRouter := s.Group("/shop-type")
@@ -150,6 +154,8 @@ func NewHTTPServer(
 				// POST /user/login -> userHandler.Login
 				noAuthRouter.POST("/code", userHandler.SendCode)
 				noAuthRouter.POST("/login", userHandler.Login)
+				noAuthRouter.GET("/info/:id", userHandler.QueryUserInfoByID)
+				noAuthRouter.GET("/:id", userHandler.QueryUserByID)
 			}
 
 			// Use(middleware.Login()) 给这个分组追加局部中间件。
@@ -157,6 +163,7 @@ func NewHTTPServer(
 			authRouter := userRouter.Group("/").Use(middleware.Login())
 			{
 				authRouter.GET("/me", userHandler.Me)
+				authRouter.POST("/logout", userHandler.Logout)
 				authRouter.POST("/sign", userHandler.Sign)
 				authRouter.GET("/sign/count", userHandler.SignCount)
 			}

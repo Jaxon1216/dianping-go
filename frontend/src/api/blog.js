@@ -15,7 +15,7 @@ const normalizeBlogList = (blogs) => {
 // 获取热门博客列表
 export const getHotBlogs = (current = 1) => {
   return request
-    .get('/blog/hot', { params: { id: current } })
+    .get('/blog/hot', { params: { current } })
     .then(normalizeBlogList)
 }
 
@@ -34,7 +34,7 @@ export const getUserBlogs = (id, current = 1) => {
 // 获取当前用户的博客列表
 export const getMyBlogs = (current = 1) => {
   return request
-    .get('/blog/of/me', { params: { id: current } })
+    .get('/blog/of/me', { params: { current } })
     .then(normalizeBlogList)
 }
 

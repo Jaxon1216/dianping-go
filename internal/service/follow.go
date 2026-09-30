@@ -28,13 +28,16 @@ type followService struct {
 
 func (s *followService) Follow(ctx context.Context, followUserID uint64, follow bool) error {
 	// 1. 获取登录用户
-	userID := user_holder.GetUser(ctx).ID
+	userID, err := currentUserID(ctx)
+	if err != nil {
+		return err
+	}
 
-	key := "follows:" + strconv.Itoa(int(*userID))
+	key := "follows:" + strconv.Itoa(int(userID))
 	//	判断是关注还是取关
 	if follow {
 		//	2. 关注，新增数据
-		if err := s.query.Follow.Save(&model.Follow{UserID: *userID, FollowUserID: followUserID}); err != nil {
+		if err := s.query.Follow.Save(&model.Follow{UserID: userID, FollowUserID: followUserID}); err != nil {
 			return err
 		}
 		//	把关注用户的 ID 放入 redis set 集合
@@ -43,7 +46,7 @@ func (s *followService) Follow(ctx context.Context, followUserID uint64, follow 
 		}
 	} else {
 		//	3. 取关，删除数据
-		if _, err := s.query.Follow.Delete(&model.Follow{UserID: *userID, FollowUserID: followUserID}); err != nil {
+		if _, err := s.query.Follow.Delete(&model.Follow{UserID: userID, FollowUserID: followUserID}); err != nil {
 			return err
 		}
 		//	把关注用户的 ID 从 redis set 集合中移除
@@ -56,10 +59,14 @@ func (s *followService) Follow(ctx context.Context, followUserID uint64, follow 
 
 func (s *followService) IsFollow(ctx context.Context, followUserID uint64) (bool, error) {
 	// 1. 获取登录用户
-	userID := user_holder.GetUser(ctx).ID
+	user := user_holder.GetUser(ctx)
+	if user == nil || user.ID == nil {
+		return false, nil
+	}
+	userID := *user.ID
 	//	2. 查询是否关注
 	count, err := s.query.Follow.
-		Where(s.query.Follow.UserID.Eq(*userID)).
+		Where(s.query.Follow.UserID.Eq(userID)).
 		Where(s.query.Follow.FollowUserID.Eq(followUserID)).Count()
 	if err != nil {
 		return false, err
@@ -69,15 +76,18 @@ func (s *followService) IsFollow(ctx context.Context, followUserID uint64) (bool
 }
 
 func (s *followService) FollowCommons(ctx context.Context, id uint64) ([]*v1.SimpleUser, error) {
-	userID := user_holder.GetUser(ctx).ID
-	key := "follows:" + strconv.Itoa(int(*userID))
+	userID, err := currentUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	key := "follows:" + strconv.Itoa(int(userID))
 	key2 := "follows:" + strconv.Itoa(int(id))
 	interset, err := s.rdb.SInter(ctx, key, key2).Result()
 	if err != nil {
 		return nil, err
 	}
 	if len(interset) == 0 {
-		return nil, nil
+		return []*v1.SimpleUser{}, nil
 	}
 
 	//	3. 解析 id
@@ -103,4 +113,12 @@ func (s *followService) FollowCommons(ctx context.Context, id uint64) ([]*v1.Sim
 		}
 	}
 	return simpleUsers, nil
+}
+
+func currentUserID(ctx context.Context) (uint64, error) {
+	user := user_holder.GetUser(ctx)
+	if user == nil || user.ID == nil {
+		return 0, v1.ErrCanNotGetUser
+	}
+	return *user.ID, nil
 }

@@ -10,12 +10,14 @@ import (
 	"go-dianping/internal/base/constants"
 	"go-dianping/internal/model"
 	"strconv"
+	"strings"
 )
 
 type ShopService interface {
 	QueryById(ctx context.Context, req *v1.QueryShopByIDReq) (*model.Shop, error)
 	UpdateShop(ctx context.Context, req *model.Shop) error
-	QueryShopOfType(ctx context.Context, typeId uint64, current int, x *float64, y *float64) ([]*model.Shop, error)
+	QueryShopOfType(ctx context.Context, typeID uint64, current int, sortBy string, x *float64, y *float64) ([]*model.Shop, error)
+	QueryShopByName(ctx context.Context, name string, current int) ([]*model.Shop, error)
 }
 
 type shopService struct {
@@ -23,19 +25,41 @@ type shopService struct {
 	cacheClient cache_client.CacheClient[model.Shop]
 }
 
-func (s *shopService) QueryShopOfType(ctx context.Context, typeId uint64, current int, x *float64, y *float64) ([]*model.Shop, error) {
-	if x == nil || y == nil {
-		page, _, err := s.query.Shop.Where(s.query.Shop.TypeID.Eq(typeId)).
-			FindByPage(current, constants.DefaultPageSize)
+func (s *shopService) QueryShopOfType(
+	ctx context.Context,
+	typeID uint64,
+	current int,
+	sortBy string,
+	x *float64,
+	y *float64,
+) ([]*model.Shop, error) {
+	if current < 1 {
+		current = 1
+	}
+
+	queryByType := func() ([]*model.Shop, error) {
+		shopQuery := s.query.Shop.Where(s.query.Shop.TypeID.Eq(typeID))
+		switch sortBy {
+		case "comments":
+			shopQuery = shopQuery.Order(s.query.Shop.Comments.Desc())
+		case "score":
+			shopQuery = shopQuery.Order(s.query.Shop.Score.Desc())
+		}
+		offset := (current - 1) * constants.DefaultPageSize
+		page, _, err := shopQuery.FindByPage(offset, constants.DefaultPageSize)
 		return page, err
+	}
+
+	if x == nil || y == nil || sortBy != "" {
+		return queryByType()
 	}
 	from := (current - 1) * constants.DefaultPageSize
 	end := current * constants.DefaultPageSize
-	key := fmt.Sprintf("%s%d", constants.RedisShopGeoKey, typeId)
+	key := fmt.Sprintf("%s%d", constants.RedisShopGeoKey, typeID)
 	results, err := s.rdb.GeoSearchLocation(ctx, key, &redis.GeoSearchLocationQuery{
 		GeoSearchQuery: redis.GeoSearchQuery{
-			Longitude:  *y,
-			Latitude:   *x,
+			Longitude:  *x,
+			Latitude:   *y,
 			Radius:     5000,
 			RadiusUnit: "m",
 			Count:      end,
@@ -45,7 +69,7 @@ func (s *shopService) QueryShopOfType(ctx context.Context, typeId uint64, curren
 		WithHash:  false,
 	}).Result()
 	if errors.Is(err, redis.Nil) || len(results) == 0 {
-		return nil, nil
+		return queryByType()
 	} else if err != nil {
 		return nil, err
 	}
@@ -58,11 +82,11 @@ func (s *shopService) QueryShopOfType(ctx context.Context, typeId uint64, curren
 	distanceMap := map[string]float64{}
 	for i, r := range results {
 		shopIDStr := r.Name
-		id, err := strconv.Atoi(shopIDStr)
-		if err != nil {
-			return nil, err
+		parsedID, parseErr := strconv.Atoi(shopIDStr)
+		if parseErr != nil {
+			return nil, parseErr
 		}
-		ids[i] = uint64(id)
+		ids[i] = uint64(parsedID)
 		distanceMap[shopIDStr] = r.Dist
 	}
 
@@ -75,6 +99,21 @@ func (s *shopService) QueryShopOfType(ctx context.Context, typeId uint64, curren
 	}
 
 	return shops, nil
+}
+
+func (s *shopService) QueryShopByName(ctx context.Context, name string, current int) ([]*model.Shop, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return []*model.Shop{}, nil
+	}
+	if current < 1 {
+		current = 1
+	}
+	offset := (current - 1) * constants.DefaultPageSize
+	shops, _, err := s.query.Shop.
+		Where(s.query.Shop.Name.Like("%"+name+"%")).
+		FindByPage(offset, constants.DefaultPageSize)
+	return shops, err
 }
 
 func NewShopService(

@@ -88,8 +88,9 @@ func (h *ShopHandler) UpdateShop(ctx *gin.Context) {
 // @Router /shop/of/type [get]
 func (h *ShopHandler) QueryShopOfType(ctx *gin.Context) {
 	var req struct {
-		TypeId  uint64   `form:"typeId" binding:"required"`
-		Current int      `form:"current,default=1" binding:"required"`
+		TypeID  uint64   `form:"typeId" binding:"required"`
+		Current int      `form:"current,default=1"`
+		SortBy  string   `form:"sortBy"`
 		X       *float64 `form:"x"`
 		Y       *float64 `form:"y"`
 	}
@@ -98,9 +99,42 @@ func (h *ShopHandler) QueryShopOfType(ctx *gin.Context) {
 		return
 	}
 
-	shops, err := h.shopService.QueryShopOfType(ctx.Request.Context(), req.TypeId, req.Current, req.X, req.Y)
+	shops, err := h.shopService.QueryShopOfType(
+		ctx.Request.Context(),
+		req.TypeID,
+		req.Current,
+		req.SortBy,
+		req.X,
+		req.Y,
+	)
 	if err != nil {
+		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
+		return
+	}
+	v1.HandleSuccess(ctx, shops)
+}
+
+// QueryShopByName godoc
+// @Summary 根据名称分页查询商铺
+// @Tags shop
+// @Produce json
+// @Param name query string true "商铺名称"
+// @Param current query int false "页码"
+// @Success 200 {object} v1.Response
+// @Router /shop/of/name [get]
+func (h *ShopHandler) QueryShopByName(ctx *gin.Context) {
+	var req struct {
+		Name    string `form:"name" binding:"required"`
+		Current int    `form:"current,default=1"`
+	}
+	if err := ctx.ShouldBindQuery(&req); err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	shops, err := h.shopService.QueryShopByName(ctx.Request.Context(), req.Name, req.Current)
+	if err != nil {
+		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 	v1.HandleSuccess(ctx, shops)

@@ -5,6 +5,7 @@ import (
 	"go-dianping/api/v1"
 	"go-dianping/internal/service"
 	"net/http"
+	"strings"
 )
 
 func NewUserHandler(handler *Handler,
@@ -78,7 +79,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 }
 
 // Me godoc
-// @Summary 获取当前登录的用户并返回
+// @Summary 获取当前登录用户
 // @Schemes
 // @Description
 // @Tags user
@@ -96,30 +97,73 @@ func (h *UserHandler) Me(ctx *gin.Context) {
 }
 
 // QueryUserByID godoc
-// @Summary 获取当前登录的用户并返回
+// @Summary 根据 ID 查询用户
 // @Schemes
 // @Description
 // @Tags user
 // @Produce json
-// @Security Bearer
 // @Param id path uint64 true "用户ID"
 // @Success 200 {object} v1.MeResp
-// @Router /user/me [get]
+// @Router /user/{id} [get]
 func (h *UserHandler) QueryUserByID(ctx *gin.Context) {
 	var req struct {
-		userID uint64 `uri:"id" binding:"required"`
+		ID uint64 `uri:"id" binding:"required"`
 	}
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
-	user, err := h.userService.QueryUserByID(ctx.Request.Context(), req.userID)
+	user, err := h.userService.QueryUserByID(ctx.Request.Context(), req.ID)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 	v1.HandleSuccess(ctx, user)
+}
+
+// QueryUserInfoByID godoc
+// @Summary 根据 ID 查询用户详细资料
+// @Tags user
+// @Produce json
+// @Param id path uint64 true "用户ID"
+// @Success 200 {object} v1.Response
+// @Router /user/info/{id} [get]
+func (h *UserHandler) QueryUserInfoByID(ctx *gin.Context) {
+	var req struct {
+		ID uint64 `uri:"id" binding:"required"`
+	}
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	userInfo, err := h.userService.QueryUserInfoByID(ctx.Request.Context(), req.ID)
+	if err != nil {
+		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
+		return
+	}
+	v1.HandleSuccess(ctx, userInfo)
+}
+
+// Logout godoc
+// @Summary 退出登录
+// @Tags user
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} v1.Response
+// @Router /user/logout [post]
+func (h *UserHandler) Logout(ctx *gin.Context) {
+	token, found := strings.CutPrefix(ctx.GetHeader("Authorization"), "Bearer ")
+	if !found || token == "" {
+		v1.HandleError(ctx, http.StatusUnauthorized, v1.ErrCanNotGetUser.Error(), nil)
+		return
+	}
+	if err := h.userService.Logout(ctx.Request.Context(), token); err != nil {
+		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
+		return
+	}
+	v1.HandleSuccess(ctx, nil)
 }
 
 // Sign godoc

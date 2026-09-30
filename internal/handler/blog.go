@@ -40,7 +40,7 @@ func (h *BlogHandler) SaveBlog(ctx *gin.Context) {
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
-	id, err := h.blogService.SaveBlog(ctx, &blog)
+	id, err := h.blogService.SaveBlog(ctx.Request.Context(), &blog)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
@@ -67,7 +67,7 @@ func (h *BlogHandler) LikeBlog(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.blogService.LikeBlog(ctx, req.ID); err != nil {
+	if err := h.blogService.LikeBlog(ctx.Request.Context(), req.ID); err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
@@ -86,14 +86,14 @@ func (h *BlogHandler) LikeBlog(ctx *gin.Context) {
 // @Router /blog/of/me [get]
 func (h *BlogHandler) QueryMyBlog(ctx *gin.Context) {
 	var req struct {
-		Current int `form:"id" binding:"required"`
+		Current int `form:"current,default=1"`
 	}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
-	records, err := h.blogService.QueryMyBlog(ctx, req.Current)
+	records, err := h.blogService.QueryMyBlog(ctx.Request.Context(), req.Current)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
@@ -113,14 +113,14 @@ func (h *BlogHandler) QueryMyBlog(ctx *gin.Context) {
 // @Router /blog/hot [get]
 func (h *BlogHandler) QueryHotBlog(ctx *gin.Context) {
 	var req struct {
-		Current int `form:"id" binding:"required"`
+		Current int `form:"current,default=1"`
 	}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
-	records, err := h.blogService.QueryHotBlog(ctx, req.Current)
+	records, err := h.blogService.QueryHotBlog(ctx.Request.Context(), req.Current)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
@@ -147,7 +147,7 @@ func (h *BlogHandler) QueryById(ctx *gin.Context) {
 		return
 	}
 
-	blog, err := h.blogService.QueryBlogById(ctx, req.ID)
+	blog, err := h.blogService.QueryBlogById(ctx.Request.Context(), req.ID)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
@@ -164,7 +164,7 @@ func (h *BlogHandler) QueryById(ctx *gin.Context) {
 // @Produce json
 // @Param id path uint64 true "博文 FollowUserId"
 // @Success 200 {object} v1.QueryBlogByIDResp
-// @Router /blog/{id} [get]
+// @Router /blog/likes/{id} [get]
 func (h *BlogHandler) QueryBlogLikes(ctx *gin.Context) {
 	var req struct {
 		ID uint64 `uri:"id" binding:"required"`
@@ -174,7 +174,7 @@ func (h *BlogHandler) QueryBlogLikes(ctx *gin.Context) {
 		return
 	}
 
-	blog, err := h.blogService.QueryBlogLikes(ctx, req.ID)
+	blog, err := h.blogService.QueryBlogLikes(ctx.Request.Context(), req.ID)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
@@ -195,14 +195,14 @@ func (h *BlogHandler) QueryBlogLikes(ctx *gin.Context) {
 func (h *BlogHandler) QueryBlogByUserID(ctx *gin.Context) {
 	var req struct {
 		ID      uint64 `form:"id" binding:"required"`
-		Current int    `form:"current,default=1" binding:"required"`
+		Current int    `form:"current,default=1"`
 	}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
-	blogs, err := h.blogService.QueryBlogByUserID(ctx, req.ID, req.Current)
+	blogs, err := h.blogService.QueryBlogByUserID(ctx.Request.Context(), req.ID, req.Current)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return
@@ -231,7 +231,7 @@ func (h *BlogHandler) QueryBlogOfFollow(ctx *gin.Context) {
 		return
 	}
 
-	blogs, err := h.blogService.QueryBlogOfFollow(ctx, req.Max, req.Offset)
+	blogs, err := h.blogService.QueryBlogOfFollow(ctx.Request.Context(), req.Max, req.Offset)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusInternalServerError, err.Error(), nil)
 		return

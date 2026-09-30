@@ -66,10 +66,14 @@ func (s *blogService) SaveBlog(ctx context.Context, blog *model.Blog) (uint64, e
 
 func (s *blogService) LikeBlog(ctx context.Context, id uint64) error {
 	// 1. 获取登陆用户
-	userId := *user_holder.GetUser(ctx).ID
+	user := user_holder.GetUser(ctx)
+	if user == nil || user.ID == nil {
+		return v1.ErrCanNotGetUser
+	}
+	userID := *user.ID
 	// 2. 判断当前登录用户是否已经点赞
 	key := constants.RedisBlogLikeKey + strconv.Itoa(int(id))
-	_, err := s.rdb.ZScore(ctx, key, strconv.Itoa(int(userId))).Result()
+	_, err := s.rdb.ZScore(ctx, key, strconv.Itoa(int(userID))).Result()
 	if errors.Is(err, redis.Nil) {
 		// 3. 如果未点赞，可以点赞
 		// 3.1. 数据库点赞数 +1
@@ -83,7 +87,7 @@ func (s *blogService) LikeBlog(ctx context.Context, id uint64) error {
 		if info.RowsAffected != 0 {
 			if err := s.rdb.ZAdd(ctx, key, redis.Z{
 				Score:  float64(time.Now().UnixMilli()),
-				Member: strconv.Itoa(int(userId)),
+				Member: strconv.Itoa(int(userID)),
 			}).Err(); err != nil {
 				return err
 			}
@@ -101,7 +105,7 @@ func (s *blogService) LikeBlog(ctx context.Context, id uint64) error {
 		}
 		// 4.2. 把用户从 redis 的 set 集合中删除
 		if info.RowsAffected != 0 {
-			if err := s.rdb.ZRem(ctx, key, strconv.Itoa(int(userId))).Err(); err != nil {
+			if err := s.rdb.ZRem(ctx, key, strconv.Itoa(int(userID))).Err(); err != nil {
 				return err
 			}
 		}
@@ -111,25 +115,34 @@ func (s *blogService) LikeBlog(ctx context.Context, id uint64) error {
 
 func (s *blogService) QueryMyBlog(ctx context.Context, current int) ([]*model.Blog, error) {
 	user := user_holder.GetUser(ctx)
+	if user == nil || user.ID == nil {
+		return nil, v1.ErrCanNotGetUser
+	}
+	if current < 1 {
+		current = 1
+	}
+	offset := (current - 1) * constants.MaxPageSize
 	result, _, err := s.query.Blog.
 		Where(s.query.Blog.UserID.Eq(*user.ID)).
-		FindByPage(current, constants.MaxPageSize)
-	return result, err
+		FindByPage(offset, constants.MaxPageSize)
+	if err != nil {
+		return nil, err
+	}
+	return result, s.enrichBlogs(ctx, result)
 }
 
 func (s *blogService) QueryHotBlog(ctx context.Context, current int) ([]*model.Blog, error) {
+	if current < 1 {
+		current = 1
+	}
+	offset := (current - 1) * constants.MaxPageSize
 	result, _, err := s.query.Blog.
 		Order(s.query.Blog.Liked.Desc()).
-		FindByPage(current, constants.MaxPageSize)
-	for _, blog := range result {
-		if err := s.queryBlogUser(blog); err != nil {
-			return nil, err
-		}
-		if err := s.isBlogLiked(ctx, blog); err != nil {
-			return nil, err
-		}
+		FindByPage(offset, constants.MaxPageSize)
+	if err != nil {
+		return nil, err
 	}
-	return result, err
+	return result, s.enrichBlogs(ctx, result)
 }
 
 func (s *blogService) QueryBlogById(ctx context.Context, id uint64) (*model.Blog, error) {
@@ -170,19 +183,29 @@ func (s *blogService) isBlogLiked(ctx context.Context, blog *model.Blog) error {
 	// 2. 判断当前登录用户是否已经点赞
 	key := constants.RedisBlogLikeKey + strconv.Itoa(int(blog.ID))
 	_, err := s.rdb.ZScore(ctx, key, strconv.Itoa(int(userId))).Result()
-	blog.IsLike = !errors.Is(err, redis.Nil)
-	return err
+	if errors.Is(err, redis.Nil) {
+		blog.IsLike = false
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	blog.IsLike = true
+	return nil
 }
 
 func (s *blogService) QueryBlogLikes(ctx context.Context, id uint64) ([]*v1.SimpleUser, error) {
 	//	 1. 查询 top5 的点赞用户
 	key := constants.RedisBlogLikeKey + strconv.Itoa(int(id))
-	top5, err := s.rdb.ZRange(ctx, key, 0, 4).Result()
+	top5, err := s.rdb.ZRevRange(ctx, key, 0, 4).Result()
 	if errors.Is(err, redis.Nil) {
 		// 如果没有点赞用户，直接返回空
-		return nil, nil
+		return []*v1.SimpleUser{}, nil
 	} else if err != nil {
 		return nil, err
+	}
+	if len(top5) == 0 {
+		return []*v1.SimpleUser{}, nil
 	}
 	//	2. 解析出其中的用户 FollowUserId
 	ids := make([]uint64, len(top5))
@@ -198,7 +221,7 @@ func (s *blogService) QueryBlogLikes(ctx context.Context, id uint64) ([]*v1.Simp
 	if err != nil {
 		return nil, err
 	}
-	users := make([]*v1.SimpleUser, len(ids))
+	users := make([]*v1.SimpleUser, len(result))
 	for i, user := range result {
 		users[i] = &v1.SimpleUser{
 			ID:       &user.ID,
@@ -211,8 +234,29 @@ func (s *blogService) QueryBlogLikes(ctx context.Context, id uint64) ([]*v1.Simp
 }
 
 func (s *blogService) QueryBlogByUserID(ctx context.Context, id uint64, current int) ([]*model.Blog, error) {
-	result, _, err := s.query.Blog.Where(s.query.Blog.UserID.Eq(id)).FindByPage(current, constants.MaxPageSize)
-	return result, err
+	if current < 1 {
+		current = 1
+	}
+	offset := (current - 1) * constants.MaxPageSize
+	result, _, err := s.query.Blog.
+		Where(s.query.Blog.UserID.Eq(id)).
+		FindByPage(offset, constants.MaxPageSize)
+	if err != nil {
+		return nil, err
+	}
+	return result, s.enrichBlogs(ctx, result)
+}
+
+func (s *blogService) enrichBlogs(ctx context.Context, blogs []*model.Blog) error {
+	for _, blog := range blogs {
+		if err := s.queryBlogUser(blog); err != nil {
+			return err
+		}
+		if err := s.isBlogLiked(ctx, blog); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *blogService) QueryBlogOfFollow(ctx context.Context, max int, offset int64) (*v1.ScrollResult[model.Blog], error) {
