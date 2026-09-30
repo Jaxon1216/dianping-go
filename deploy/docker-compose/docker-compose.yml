@@ -1,26 +1,68 @@
+# Docker Compose 用一个 YAML 文件描述一组需要一起运行的容器。
+#
+# 先记住三个边界：
+# 1. image 是“从哪里创建容器”的镜像模板；
+# 2. container 是镜像真正启动后的运行实例；
+# 3. ports、volumes、environment 是把宿主机配置映射给容器的常用方式。
+#
+# 当前仓库是“混合运行”：
+# - MariaDB、Redis、Nginx 在 Docker 容器中；
+# - Go 应用通过 `go run ./cmd/server` 运行在宿主机上。
+# 因此 config/local.yml 里使用 127.0.0.1:3306 和 127.0.0.1:6379，
+# 访问的是 Docker 映射到宿主机的端口，而不是容器内部服务名。
+
 services:
+  # 数据库容器：保存用户、商户、博客、订单等持久化业务数据。
   mysql:
+    # image 是镜像名。未写版本号时会使用镜像的默认/最新标签，
+    # 学习时方便，生产环境应固定版本，避免下次拉取到不兼容的新版本。
     image: mariadb
+    # hostname 是容器在 Docker 网络中的主机名。
+    # 如果 Go 也放进 Compose，容器之间通常用 mysql:3306 互相访问。
     hostname: mysql
+    # container_name 是人为指定的容器名，方便执行 docker logs mysql。
+    # 不指定时 Docker Compose 也会自动生成项目名-服务名-序号。
     container_name: mysql
     ports:
-      # 宿主机 3306 -> MySQL 容器 3306；冒号左边是宿主机端口。
+      # 端口格式是“宿主机端口:容器端口”。
+      # 宿主机 127.0.0.1:3306 -> MariaDB 容器内部的 3306。
+      # 左边端口给宿主机程序使用；右边端口是容器内 MariaDB 监听的端口。
+      # 如果宿主机 3306 已被占用，可以改成 "13306:3306"，
+      # 但此时宿主机运行的 Go 配置也必须改成 127.0.0.1:13306。
       - "3306:3306"
     environment:
+      # environment 给容器启动进程注入环境变量。
+      # 这些变量由 MariaDB 官方镜像的启动脚本读取，不是 Go 程序直接读取。
       - MYSQL_ROOT_PASSWORD=123
       - MYSQL_DATABASE=hmdp
     volumes:
+      # 左边是 Compose 文件所在目录下的宿主机文件；
+      # 右边是容器内 MariaDB 启动脚本约定的初始化目录。
+      # 空数据库第一次初始化时，镜像会执行 init.sql 中的建表和数据 SQL。
+      # 这是“初始化脚本挂载”，不是数据库运行数据持久化。
+      # 当前没有挂载 /var/lib/mysql，因此删除容器后要特别注意数据是否保留。
       - ./hmdp.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # 缓存和登录态容器：项目用它保存验证码、Token、缓存、集合和 Stream。
   redis:
+    # alpine 是一个体积较小的基础系统标签。
+    # 生产环境同样建议固定 Redis 版本，而不是只写 redis:alpine。
     image: redis:alpine
+    # 容器网络中的服务名/主机名。容器内访问 Redis 通常写 redis:6379。
     hostname: redis
     container_name: redis
     ports:
-      # 宿主机 6379 -> Redis 容器 6379。
+      # 宿主机 127.0.0.1:6379 -> Redis 容器内部 6379。
+      # 所以 Go 在宿主机上可以连接 127.0.0.1:6379。
       - "6379:6379"
+    # 覆盖镜像默认启动命令，要求 Redis 使用密码 123321。
+    # 必须和 config/local.yml 中的 data.redis.password 保持一致。
+    # 生产环境不要把真实密码直接提交在 Compose 文件中，应使用 Secret/环境变量。
     command: [ "redis-server", "--requirepass 123321" ]
 
+# 下面是可选的 Redis 多实例示例，目前被注释掉，没有启动。
+# 注意 "6380:6379" 的含义：宿主机用 6380，容器内部仍然用 Redis 默认的 6379。
+# 如果启用它们，宿主机 Go 配置需要分别连接 127.0.0.1:6380 和 127.0.0.1:6381。
 #  redis2:
 #    image: redis:alpine
 #    hostname: redis2
@@ -35,14 +77,22 @@ services:
 #    ports:
 #      - "6381:6379"
 
+  # Nginx 容器：对外提供统一 HTTP 入口，再把请求反向代理给 Go。
   nginx:
     image: nginx:alpine
     container_name: nginx
     ports:
-      # 宿主机 8080 -> Nginx 容器 8080；外部入口通常先访问这里。
+      # 宿主机 127.0.0.1:8080 -> Nginx 容器内部 8080。
+      # 客户端访问 http://127.0.0.1:8080，先到 Nginx，而不是直接到 Go:8081。
       - "8080:8080"
     volumes:
+      # 把宿主机的 Nginx 配置挂载进容器。
+      # :ro 表示 read-only：容器可以读取配置，但不能修改宿主机这份文件。
+      # 修改配置后通常需要 docker compose restart nginx 让 Nginx 重新加载。
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    # 这里只表达启动顺序依赖，不代表 MySQL/Redis 已经完成初始化并 ready。
+    # 当前 Nginx 实际依赖的是宿主机上的 Go:8081/8082，
+    # 因此如果要严格表达完整依赖，还需要把 Go 服务也放进 Compose。
     depends_on:
       - redis
       - mysql
