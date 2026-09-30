@@ -8,7 +8,11 @@
       <el-icon size="20"><HomeFilled /></el-icon>
       <span class="foot-text">首页</span>
     </div>
-    <div class="foot-item" @click="toPage(2)">
+    <div
+      class="foot-item"
+      :class="{ active: activeBtn === 2 }"
+      @click="toPage(2)"
+    >
       <el-icon size="20"><MapLocation /></el-icon>
       <span class="foot-text">地图</span>
     </div>
@@ -57,6 +61,9 @@ const toPage = (index) => {
       break
     case 1:
       router.push('/')
+      break
+    case 2:
+      router.push('/map')
       break
     case 4:
       if (!userStore.isLoggedIn) {

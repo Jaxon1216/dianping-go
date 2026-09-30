@@ -21,6 +21,12 @@ const routes = [
     meta: { title: '商户详情' }
   },
   {
+    path: '/map',
+    name: 'Map',
+    component: () => import('@/views/map/index.vue'),
+    meta: { title: '地图找店' }
+  },
+  {
     path: '/blog-detail/:id',
     name: 'BlogDetail',
     component: () => import('@/views/blog-detail/index.vue'),
