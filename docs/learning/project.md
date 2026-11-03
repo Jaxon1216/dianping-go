@@ -1,4 +1,4 @@
-# 项目地图、学习路线与模块状态
+# 项目地图与模块状态
 
 ## 项目地图
 
@@ -48,20 +48,9 @@ Redis 使用位置：
 
 ## 学习路线
 
-按问题定位，不按日期排课：
+学习顺序、每阶段目标和完成标准统一维护在 [roadmap.md](roadmap.md)，本文只负责「项目长什么样」和「哪些模块真的可用」。
 
-1. 启动与请求链路：`cmd/server/main.go`、`internal/server/http.go`。
-2. Go 工程基础：package、interface、pointer、error、context、goroutine/channel。
-3. Gin 与认证：路由、中间件、请求绑定、响应和 token。
-4. MySQL/GORM：SQL 表、GORM Gen、查询、事务、错误和索引。
-5. Redis：String、Hash、List、Set、ZSet、Bitmap、GEO、HLL、Stream。
-6. 登录与 token：`user.go`、`refresh_token.go`。
-7. 缓存一致性：穿透、击穿、逻辑过期和更新策略。
-8. 关注与 Feed：Set、ZSet、滚动分页和时间游标。
-9. 秒杀：Lua 原子性、幂等、分布式锁、Stream 和 pending list。
-10. 测试、压测、日志、配置和 Docker。
-
-每次学习尽量完成：找到入口 -> 画出调用链 -> 说明数据/状态变化 -> 用测试、日志或客户端验证 -> 记录稳定结论。
+需要逐条展开某一课，进入 [courses/](courses/)。
 
 ## 官方模块与仓库状态
 

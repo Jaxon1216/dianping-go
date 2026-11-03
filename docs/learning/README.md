@@ -4,11 +4,18 @@
 
 ## 阅读入口
 
-1. 先看本文的学习者画像、讲解契约和工具清单。
-2. 需要理解仓库、路线或模块完成度时看 [project.md](project.md)。
-3. 需要复习已确认结论时看 [notes.md](notes.md)。
-4. 基础设施变化看 [changelog.md](changelog.md)。
-5. 需要参考 Java 版黑马点评复盘时看 [java-review-extracted.md](java-review-extracted.md)。
+按这个顺序读，不要一次全打开：
+
+1. **先定路线**：[roadmap.md](roadmap.md) —— 六个学习阶段、每阶段的源码入口和完成标准。
+2. **再看地图**：[project.md](project.md) —— 目录职责、模块完成度和当前疑点。
+3. **要逐条展开时**：[courses/](courses/) —— C01～C10，按真实调用链讲。
+4. **复习已确认结论**：[notes.md](notes.md) —— 稳定结论按主题沉淀。
+5. **准备面试表达**：[interview.md](interview.md) —— 口播版问题与证据索引。
+6. **查外部资料**：[resources.md](resources.md) —— 原文链接与官方文档。
+7. **追溯原始复盘**：[java-review-extracted.md](java-review-extracted.md) —— Java 版原文提炼 + Go 映射。
+8. **基础设施变化**：[changelog.md](changelog.md)。
+
+本文剩下的学习者画像、讲解契约和工具清单属于**协作约定**，需要时查阅即可。
 
 ## 学习者画像
 

@@ -1,8 +1,8 @@
 # C03 Redis 会话与滑动续期
 
 > 课程性质：核心
-> 返回：[主导学](../导学.md)；前置：[C02](C02-前后端HTTP契约.md)、Redis Hash/TTL、`context.Context`；下一课：[C04 Cache-Aside](C04-CacheAside与缓存一致性.md)
-> 对应：B2；[Q2](../面经.md#q2-为什么把登录态放在-redis而不是进程内存)；目标掌握：看懂链路、理解机制、设计与表达。
+> 返回：[主导学](../roadmap.md)；前置：[C02](C02-前后端HTTP契约.md)、Redis Hash/TTL、`context.Context`；下一课：[C04 Cache-Aside](C04-CacheAside与缓存一致性.md)
+> 对应：B2；[Q2](../interview.md#q2-为什么把登录态放在-redis而不是进程内存)；目标掌握：看懂链路、理解机制、设计与表达。
 
 ## 本课重点
 

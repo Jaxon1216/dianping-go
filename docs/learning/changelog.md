@@ -1,5 +1,14 @@
 # 学习基础设施变更记录
 
+## 2026-11-03
+
+- 新增 `docs/learning/roadmap.md`：把 Java 版复盘原文提炼成六阶段学习路线，每阶段给出源码入口、必答问题和完成标准，并标注原文三处不能照搬的结论。
+- 新增 `docs/learning/resources.md`：统一保存外部资料与原复盘链接，明确「外部资料只用于解释，不作为项目事实」的使用边界。
+- 将 10 篇源码课程从 `interview-prep/dianping-go/guide-fullstack/` 迁入 `docs/learning/courses/`，并修正课程内指向导学与面经的相对链接。
+- 将 `面试` 材料迁入 `docs/learning/interview.md`。
+- `project.md` 只保留项目地图与模块状态，学习顺序改为指向 `roadmap.md`，避免两处维护同一份路线。
+- 删除重复或已被覆盖的文档：根目录 `MISSION.md`、`NOTES.md`、`RESOURCES.md`，`interview-prep/dianping-go/导学.md`（内容已并入 roadmap），`docs/learning/http/导学-http.md`（C02 已覆盖），以及孤立的 HTML 教学页 `lessons/`、`reference/`、`assets/`。
+
 ## 2026-09-20
 
 - 新增 `docs/learning/notes/go-basics-01-pointer-interface-error.md`，用 STAR 格式沉淀第 1 轮前置知识对话：`nil` 语义、`if err != nil`、多返回值按位置匹配、指针 vs 值、空指针 vs 野指针、handler 拦截并翻译 error、interface vs struct 与为何不写 `*`、panic 现象与 error 的区别。对照 `internal/service/user.go`、`internal/handler/user.go`、`api/v1/`、`internal/server/http.go`。
