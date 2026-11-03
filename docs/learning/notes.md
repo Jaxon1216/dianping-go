@@ -8,6 +8,8 @@
   - 专题：[Go 基础 01：指针 / 接口 / nil / error / panic](notes/go-basics-01-pointer-interface-error.md)（第 1 轮对话沉淀，STAR 格式）。
   - 专题：[项目架构判断：分层架构不等于 DDD](notes/architecture-layered-vs-ddd.md)（基于真实依赖方向判断）。
   - 专题：[Go 后端验收标准：命令 / Gin / GORM Gen / Redis / Go 基础](notes/go-backend-acceptance-checklist.md)（可勾选的学习验收清单）。
+  - 入门小课：[接口、实现与构造函数](lessons/0001-user-service-interface.html)；[复习速查](reference/user-service-interface.html)（教学材料，独立掌握仍需练习验证）。
+  - 专题：[发短信执行链：类型、实例、接口值与接收者](notes/go-sms-receiver-execution.md)（含函数返回类型、创建表达式和方法接收者的骨架语法）；[逐步执行演示](lessons/0002-sms-execution.html)。
 - **Gin/HTTP**：路由、中间件、请求和响应。
   - 专题：[前端请求全链路映射与 Go GMP 调度模型](notes/go-web-request-flow-and-gmp.md)（Express 映射，GMP 模型机制）。
 - **MySQL/GORM**：SQL、GORM Gen、模型和查询。

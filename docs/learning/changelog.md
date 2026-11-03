@@ -2,6 +2,10 @@
 
 ## 2026-11-03
 
+- 新增 `lessons/0002-sms-execution.html` 与 `examples/sms-flow/main.go`：逐步显示创建、接口返回、接收者与手机号传递、同一实例计数变化，再映射真实 Handler → Service → Redis 链路。旧小课改用实际读取和修改 s 字段的示例，补充学习偏好、专题笔记和入口。
+
+- 新增 `lessons/0001-user-service-interface.html` 与对应 `reference/` 速查页：从 TypeScript 对象逐步讲解 Go 接口、结构体方法和创建函数，配即时反馈练习；共享样式与练习脚本放入 `assets/`。增量补充学习总览、笔记索引、验收清单入口和官方资源。学习目标沿用现有文档；没有把材料覆盖标记为能力通过。
+
 - 新增 `docs/learning/notes/go-backend-acceptance-checklist.md`：把「命令 / Go 基础 / Gin / GORM Gen / Redis」整理成可勾选的验收标准，并补充隐式接口、方法集、Handler 签名和 `func (h *X) M(ctx)` 语法的解释。
 - 更新 `docs/learning/notes.md` 索引，加入验收标准专题入口。
 

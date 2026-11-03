@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小课 01 · 接口、实现与构造函数</title>
+  <link rel="stylesheet" href="../assets/teach.css">
+  <script src="../assets/teach-quiz.js" defer></script>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">黑马点评 GO · 小课 01 · 约 5 分钟</div>
+    <h1>谁规定能力，谁真正干活？</h1>
+    <p class="lead">看懂 <code>NewUserService</code> 为什么返回接口，却创建一个结构体对象。</p>
+    <p class="muted">目标：读懂一段用户服务代码，为自己编写 Gin 接口打底。先理解三个角色，再回到原代码。</p>
+    <div class="callout">需要看执行顺序、变量里的值和 s 的用途时，先打开<a href="0002-sms-execution.html">发短信执行演示</a>，按“创建实例 → 返回指针的接口值 → 调用方法 → 修改同一实例”逐步操作。</div>
+    <nav aria-label="本课导航">
+      <a href="#familiar">① 从 TS 对象开始</a>
+      <a href="#go">② Go 怎么拆开写</a>
+      <a href="#factory">③ 构造函数怎么读</a>
+      <a href="#project">④ 回到项目</a>
+      <a href="../reference/user-service-interface.html">复习速查</a>
+    </nav>
+  </header>
+
+  <section id="familiar">
+    <span class="step">01 / 已有经验</span>
+    <h2>先想一个你熟悉的 TypeScript 对象</h2>
+    <pre><code>interface UserService {
+  sendCode(phone: string): void;
+}
+
+const userService: UserService = {
+  sendCode(phone) {
+    console.log("给这个手机号准备验证码：", phone);
+  }
+};
+
+userService.sendCode("13800138000");</code></pre>
+    <p><code>interface</code> 规定：这个对象必须有一个 <code>sendCode</code> 方法。真正执行打印的是下面的方法体。</p>
+    <p>对象满足接口要求，才能赋给 <code>UserService</code> 类型的变量。变量调用方法时，执行的是实际对象里的实现。</p>
+    <div class="callout">Go 项目也有“规定能力”和“写出实现”两个角色，只是它把结构体定义和方法定义分开写。</div>
+    <p class="muted">这里只类比角色。后面的 Go 示例返回 <code>error</code>，与 TS 的 <code>void</code> 不同；Go 的普通接口由方法约束组成，不能照搬 TS 接口里的数据字段。</p>
+    <div class="quiz" data-quiz data-correct="0"
+      data-success="对。接口规定要有哪些方法，方法体才会做事。"
+      data-retry="再看 interface 那一段：那里有 console.log 吗？"
+      aria-labelledby="question-1">
+      <h3 id="question-1">小练习：上面的 interface 扮演什么角色？</h3>
+      <div class="quiz-options">
+        <button type="button" data-answer="0" aria-pressed="false">能力约定</button>
+        <button type="button" data-answer="1" aria-pressed="false">具体数据</button>
+        <button type="button" data-answer="2" aria-pressed="false">创建对象</button>
+      </div>
+      <p class="feedback" data-feedback role="status" aria-live="polite"></p>
+      <p class="quiz-answer">复习答案：能力约定。定义接口本身不会执行验证码逻辑。</p>
+    </div>
+  </section>
+
+  <section id="go">
+    <span class="step">02 / 一次只多一层</span>
+    <h2>Go 把“类型”和“方法”分开写</h2>
+    <p>先只保留一个手机号参数，把项目里的公共依赖暂时拿掉。这是教学示例。</p>
+    <pre><code>// ① 接口：要求能调用 SendCode，返回一个 error。
+type UserService interface {
+    SendCode(phone string) error
+}
+
+// ② 结构体：定义具体类型，保存服务的数据。
+type userService struct {
+    senderName string
+    sentCount  int
+}
+
+// ③ 方法：这里才写真正执行的代码。
+func (s *userService) SendCode(phone string) error {
+    s.sentCount++
+    fmt.Println(s.senderName, phone, s.sentCount)
+    return nil
+}</code></pre>
+    <p><code>type userService struct {...}</code> 定义类型和字段。<code>userService{...}</code> 创建具体实例；方法用 s 读取这个实例的 senderName，并增加它的 sentCount。</p>
+    <pre><code>p := &amp;userService{senderName: "点评短信"}
+err := p.SendCode("13800138000")</code></pre>
+    <p><code>userService{}</code> 创建结构体值，前面的 <code>&amp;</code> 取得它的地址，所以 <code>p</code> 的类型是 <code>*userService</code>。</p>
+    <p><code>(s *userService)</code> 表示：<code>SendCode</code> 是这个指针类型的方法。调用 <code>p.SendCode(...)</code> 时，方法里的 <code>s</code> 就是这次接收调用的 <code>p</code>，可以先类比 TS 的 <code>this</code>。</p>
+    <p><code>return nil</code> 表示本次调用没有错误。这个演示通过 s 读写实例字段，并打印文字；实际验证码和 Redis 逻辑要看项目源码。</p>
+    <p class="muted">Go 用显式的接收者 <code>s</code>，没有 class 或自动的 this 关键字。也不需要写 implements；把具体值赋给接口时，编译器会核对方法是否齐全。参见 <a href="https://go.dev/tour/methods/10">官方教程：隐式实现接口</a>。</p>
+    <div class="quiz" data-quiz data-correct="2"
+      data-success="对。真正的行为写在 SendCode 方法的花括号里。"
+      data-retry="找到 fmt.Println：它位于哪一段？"
+      aria-labelledby="question-2">
+      <h3 id="question-2">要加“校验手机号”的逻辑，应该改哪一段？</h3>
+      <div class="quiz-options">
+        <button type="button" data-answer="0" aria-pressed="false">定义接口</button>
+        <button type="button" data-answer="1" aria-pressed="false">声明结构</button>
+        <button type="button" data-answer="2" aria-pressed="false">实现方法</button>
+      </div>
+      <p class="feedback" data-feedback role="status" aria-live="polite"></p>
+      <p class="quiz-answer">复习答案：实现方法。结构体保存字段，接口列出方法要求，方法体执行行为。</p>
+    </div>
+  </section>
+
+  <section id="factory">
+    <span class="step">03 / 创建，再交给调用者</span>
+    <h2>NewUserService 就是普通函数</h2>
+    <pre><code>func NewUserService() UserService {
+    p := &amp;userService{senderName: "点评短信"}
+    return p
+}</code></pre>
+    <p>函数名里的 <code>New</code> 是命名习惯，意思是“创建一个”。Go 不会自动调用这个函数；需要启动代码主动调用它。</p>
+    <ol>
+      <li><code>p := &amp;userService{}</code>：创建具体对象，得到它的指针。</li>
+      <li><code>return p</code>：函数要求返回 <code>UserService</code>，编译器检查 <code>*userService</code> 有没有所需方法。</li>
+      <li>方法齐全，返回的接口值携带这个具体指针；调用接口方法时，执行具体实现。</li>
+    </ol>
+    <div class="flow" aria-label="构造函数创建具体对象，并按接口返回">
+      <div class="flow-item"><strong>创建对象</strong><code>NewUserService()</code></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="flow-item focus"><strong>实际对象的指针</strong><code>*userService</code></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="flow-item"><strong>返回接口值</strong><code>UserService</code></div>
+    </div>
+    <pre><code>u := NewUserService()                 // u 的静态类型：UserService
+err := u.SendCode("13800138000")       // 执行 (*userService).SendCode</code></pre>
+    <p>把类型写成接口，是为了让使用方通过规定的方法使用服务。在项目里，Handler 就通过 <code>UserService</code> 调用用户业务。将来换成另一个实现，也必须满足这个接口要求。</p>
+    <p class="muted">构造函数并不必须返回接口；这是本项目的设计选择。接口值也不会把对象“变成另一个对象”。参见 <a href="https://go.dev/doc/effective_go#composite_literals">官方说明：构造函数与结构体字面量</a>。</p>
+    <details>
+      <summary>先理解上面，再看：为什么删掉 &amp; 会报错？</summary>
+      <p>这里的方法定义在 <code>*userService</code> 上。接口要求 <code>SendCode</code>，这个指针类型满足要求；结构体值类型 <code>userService</code> 的方法集不满足要求。</p>
+      <pre><code>return &amp;userService{}  // 类型 *userService：满足接口
+return userService{}   // 类型 userService：不满足接口</code></pre>
+      <p>能对一个可寻址的结构体变量调用指针方法，是编译器帮助补了取地址；把结构体值赋给接口时，没有这种自动补地址。先记住这条边界，方法集留到下一小节练。</p>
+      <p>参见 <a href="https://go.dev/tour/methods/9">官方教程：接口与指针方法</a>。这条结论针对当前指针接收者写法，不能推广成“返回接口永远要加 &amp;”。</p>
+    </details>
+    <div class="quiz" data-quiz data-correct="1"
+      data-success="对。& 取得地址，表达式的类型是 *userService。"
+      data-retry="把表达式拆成两步：userService{} 创建值，前面的 & 再做什么？"
+      aria-labelledby="question-3">
+      <h3 id="question-3">&amp;userService{} 最后得到的是什么？</h3>
+      <div class="quiz-options">
+        <button type="button" data-answer="0" aria-pressed="false">对象本身</button>
+        <button type="button" data-answer="1" aria-pressed="false">对象地址</button>
+        <button type="button" data-answer="2" aria-pressed="false">能力约定</button>
+      </div>
+      <p class="feedback" data-feedback role="status" aria-live="polite"></p>
+      <p class="quiz-answer">复习答案：对象地址，即指向结构体的指针值。</p>
+    </div>
+  </section>
+
+  <section id="project">
+    <span class="step">04 / 对照真实源码</span>
+    <h2>原代码只是又带上了依赖和请求参数</h2>
+    <pre><code>type userService struct {
+    *Service
+}
+
+func NewUserService(service *Service) UserService {
+    return &amp;userService{Service: service}
+}
+
+func (s *userService) SendCode(
+    ctx context.Context, req *v1.SendCodeReq,
+) error {
+    // 校验手机号 → 准备验证码 → 写 Redis
+    // 此处省略，完整逻辑见源码。
+    return nil
+}</code></pre>
+    <p><code>Service</code> 是本项目另一个结构体，保存 Redis 客户端、数据库查询对象、配置、日志等公共依赖。</p>
+    <p><code>*Service</code> 是嵌入字段，它的字段名默认就是 <code>Service</code>。所以 <code>Service: service</code> 的左边是字段名，右边是函数参数：把传进来的公共依赖放进新对象里。</p>
+    <p>于是方法里可以通过 <code>s.rdb</code> 使用 Redis。在当前代码里，这相当于通过嵌入字段访问 <code>s.Service.rdb</code>。这里是字段嵌入，可以类比“对象里装了公共工具”，具体语义见 <a href="https://go.dev/doc/effective_go#embedding">官方说明：Embedding</a>。</p>
+    <p><code>ctx context.Context</code> 是请求上下文，<code>req *v1.SendCodeReq</code> 是请求参数结构体的指针，手机号从 <code>req.Phone</code> 取。这两个参数先按用途理解即可。</p>
+    <div class="callout">项目实际链路：POST /user/code → UserHandler.SendCode 绑定手机号 → UserService.SendCode → (*userService).SendCode 校验并写 Redis → Handler 返回响应。</div>
+    <p class="muted">事实边界：目前源码只记录短信日志，没有接入第三方短信发送。真实 UserService 还要求 Login、Me 等其他方法；本课只截取 SendCode，不能用单方法示例覆盖项目接口。</p>
+    <ul>
+      <li><a href="../../../internal/service/user.go">internal/service/user.go</a>：接口第 21–30 行，结构体与构造函数第 66–87 行，SendCode 第 89–113 行。</li>
+      <li><a href="../../../internal/service/service.go">internal/service/service.go</a>：公共依赖结构体第 19–25 行。</li>
+      <li><a href="../../../internal/handler/user.go">internal/handler/user.go</a>：Handler 保存接口第 20–23 行，调用 SendCode 第 48 行。</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>把页面收起来，试着说出三个角色：接口规定什么、方法执行什么、构造函数创建什么。答不出来就回看相应一步。</p>
+    <p>明天再用自己的话解释一次，先理解后记忆。练习结果只在本页显示，不会自动勾选项目验收清单。</p>
+    <p>有任何一行还不清楚，直接把那一行发给 Agent，我们就在那一行停下来继续讲。</p>
+    <p>下一小节：<a href="../notes/go-backend-acceptance-checklist.md#23-方法接收者与方法集">指针接收者与方法集</a> · <a href="../reference/user-service-interface.html">复习速查</a> · <a href="../README.md">学习总览</a></p>
+  </footer>
+</main>
+</body>
+</html>

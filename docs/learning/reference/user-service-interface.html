@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UserService · 接口与构造函数速查</title>
+  <link rel="stylesheet" href="../assets/teach.css">
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">黑马点评 GO · 复习速查</div>
+    <h1>读懂 UserService 的四个位置</h1>
+    <p>先读<a href="../lessons/0001-user-service-interface.html">小课 01</a>，再用这页检查自己是否还记得。</p>
+    <p>想观察每一步传递的值、s 的用途和计数变化，打开<a href="../lessons/0002-sms-execution.html">发短信执行演示</a>。</p>
+  </header>
+  <section>
+    <table>
+      <thead><tr><th>代码位置</th><th>它负责什么</th></tr></thead>
+      <tbody>
+        <tr><td><code>type UserService interface {…}</code></td><td>列出使用方可以依赖的方法要求。</td></tr>
+        <tr><td><code>type userService struct {…}</code></td><td>定义具体数据类型和字段。</td></tr>
+        <tr><td><code>func (s *userService) SendCode(…) error</code></td><td>方法体执行真实业务；s 是接收此次调用的指针。</td></tr>
+        <tr><td><code>func NewUserService(…) UserService</code></td><td>普通创建函数；创建具体对象，并按接口返回。</td></tr>
+      </tbody>
+    </table>
+    <pre><code>func NewUserService(service *Service) UserService {
+    p := &amp;userService{Service: service}
+    return p
+}</code></pre>
+    <ul>
+      <li><code>userService{…}</code>：创建结构体值。</li>
+      <li><code>&amp;userService{…}</code>：得到指向结构体的指针，类型是 <code>*userService</code>。</li>
+      <li><code>Service: service</code>：字段名 → 参数值。嵌入的 <code>*Service</code> 字段默认名为 Service。</li>
+      <li>编译期间，编译器检查 return 中的 <code>*userService</code> 是否满足接口要求；运行时返回的接口值携带该指针。</li>
+      <li>接口变量调用方法，执行其携带的具体值的实现。</li>
+    </ul>
+    <p>当前方法用指针接收者，删去 &amp; 后结构体值不满足接口。大小写表示包外可见性；接口与结构体的区别来自 interface / struct 关键字。</p>
+    <p><code>s</code> 是方法本次调用的接收者变量，携带实例指针；<code>s.field</code> 访问那份实例数据。方法关联类型，多个实例共享方法逻辑，由接收者确定本次操作哪个实例。</p>
+    <p class="muted">项目锚点：<a href="../../../internal/service/user.go">user.go：21–30、66–113 行</a>；<a href="../../../internal/service/service.go">service.go：19–25 行</a>；<a href="../../../internal/handler/user.go">handler/user.go：20–23、48 行</a>。</p>
+  </section>
+  <footer>
+    <p>原理来源：<a href="https://go.dev/tour/methods/9">Go 官方教程：接口</a>、<a href="https://go.dev/tour/methods/10">隐式实现</a>、<a href="https://go.dev/doc/effective_go#composite_literals">构造函数</a>、<a href="https://go.dev/doc/effective_go#embedding">字段嵌入</a>。</p>
+    <p>想不起其中一条，回到<a href="../lessons/0001-user-service-interface.html">对应小课</a>，或把那一行发给 Agent。</p>
+  </footer>
+</main>
+</body>
+</html>

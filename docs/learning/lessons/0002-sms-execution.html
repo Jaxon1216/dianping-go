@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>发短信执行演示 · s 到底指向谁</title>
+  <link rel="stylesheet" href="../assets/teach.css">
+  <script src="../assets/teach-stepper.js" defer></script>
+  <script src="../assets/teach-quiz.js" defer></script>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">黑马点评 GO · 执行演示</div>
+    <h1>一条短信，沿着变量走一遍</h1>
+    <p class="lead">谁创建实例，谁传地址，谁传手机号，谁通过 s 改数据。</p>
+    <p>发送方是“点评短信”，连续向两个手机号模拟发送。发送次数保存在同一个服务实例里。</p>
+    <p class="muted">演示只打印短信，没有请求短信平台。S1 是实例的示意标签；真正的 Go 源码会打印实际地址。页面按源码语义播放步骤，并未在浏览器中运行 Go。</p>
+    <nav aria-label="本页导航">
+      <a href="#execution">逐步执行</a>
+      <a href="#receiver">对照 this</a>
+      <a href="#names">最后看大小写</a>
+      <a href="#project">回到项目</a>
+      <a href="../examples/sms-flow/main.go">可运行 Go 源码</a>
+    </nav>
+  </header>
+
+  <section id="execution" data-stepper>
+    <span class="step">先观察动作，再给它起名字</span>
+    <h2 class="stepper-title" data-step-title>准备：定义类型和方法</h2>
+    <div class="stepper-controls">
+      <button type="button" data-move="previous" disabled>上一步</button>
+      <button type="button" data-move="next">下一步</button>
+      <button type="button" data-move="reset">从头看</button>
+      <span class="muted" data-step-number>1 / 11</span>
+    </div>
+    <pre class="stepper-code"><code data-active-code>type UserService interface { SendCode(phone string) error }
+type userService struct { senderName string; sentCount int }</code></pre>
+    <dl class="stepper-explanation" aria-live="polite">
+      <dt>发生什么动作</dt><dd data-step-action>编译器读懂类型、字段和方法定义。此时没有创建短信服务，也没有发短信。</dd>
+      <dt>传入什么</dt><dd data-step-input>尚未调用函数，没有传入值。</dd>
+      <dt>传出什么</dt><dd data-step-output>无运行时返回值。</dd>
+      <dt>这些东西有什么用</dt><dd data-step-reason>struct 定义数据类型，interface 定义方法要求；创建对象和执行方法是后面的运行时动作。</dd>
+    </dl>
+    <div class="stepper-grid">
+      <div>
+        <h3>当前变量里装着什么</h3>
+        <table><thead><tr><th>名字</th><th>类型</th><th>值与作用</th></tr></thead>
+          <tbody data-values><tr><td colspan="3">还没有运行时变量或服务实例。</td></tr></tbody>
+        </table>
+      </div>
+      <div class="instance">
+        <h3 data-instance-label>服务实例尚未创建</h3>
+        <dl>
+          <div><dt><code>senderName</code></dt><dd data-instance-name>—</dd></div>
+          <div><dt><code>sentCount</code></dt><dd data-instance-count>—</dd></div>
+        </dl>
+        <p class="muted">p、接口 u 携带的指针、方法接收者 s，先后关联这个实例。变量名会变，实例仍是 S1。</p>
+      </div>
+    </div>
+    <h3>模拟发送输出</h3>
+    <pre><code data-step-log>尚无模拟发送输出。</code></pre>
+    <script type="application/json" data-stepper-frames>
+[
+  {
+    "title": "准备：定义类型和方法",
+    "code": "type UserService interface { SendCode(phone string) error }\ntype userService struct { senderName string; sentCount int }",
+    "action": "编译器读懂类型、字段和方法定义。此时没有创建短信服务，也没有发短信。",
+    "input": "尚未调用函数，没有传入值。",
+    "output": "无运行时返回值。",
+    "reason": "struct 定义数据类型，interface 定义方法要求。return p 能否满足接口，也在编译期间就被检查。",
+    "values": [], "count": null, "log": ""
+  },
+  {
+    "title": "1 · main 调用创建函数",
+    "code": "u := NewUserService(\"点评短信\")",
+    "action": "开始运行 main。调用 NewUserService，进入创建函数；u 要等函数返回后才能得到值。",
+    "input": "字符串值“点评短信”，传给形参 name。",
+    "output": "函数还未返回，先执行它的函数体。",
+    "reason": "NewUserService 是一个普通函数。New 是命名习惯，只有主动调用它才执行。",
+    "values": [["name", "string", "“点评短信”；本次创建的发送方名字"]], "count": null, "log": ""
+  },
+  {
+    "title": "2 · 创建结构体实例，拿到地址",
+    "code": "p := &userService{senderName: name}",
+    "action": "userService{...} 创建实例 S1，把 name 的值放进 senderName；sentCount 未填写，初始为 0。& 得到指向实例的指针。",
+    "input": "name 的字符串值“点评短信”。",
+    "output": "p 的值是指向 S1 的指针，类型为 *userService。",
+    "reason": "类型定义像字段说明；S1 才是那份实际数据。*userService 表示指针类型，& 是取得地址的动作。",
+    "values": [["name", "string", "“点评短信”"], ["p", "*userService", "→ S1；携带实例地址"]], "count": 0, "log": ""
+  },
+  {
+    "title": "3 · 把指针按接口类型返回",
+    "code": "return p // main 中的 u 得到返回值",
+    "action": "创建函数返回。u 是 UserService 类型的接口变量；它携带具体类型 *userService 和具体指针 → S1。",
+    "input": "p 的指针值 → S1。",
+    "output": "UserService 接口值，内部具体值仍是指向 S1 的那个指针。",
+    "reason": "接口不是装很多对象的运行时集合。这里可以把接口值理解成“具体类型 + 具体值”；通过它使用规定的方法。局部变量 p 结束作用域，S1 仍可通过 u 使用。",
+    "values": [["u", "UserService", "具体类型 *userService；具体值 → S1"]], "count": 0, "log": ""
+  },
+  {
+    "title": "4 · 第一次调用，进入 SendCode",
+    "code": "u.SendCode(\"13800138000\")\n// 方法内：s → S1，phone = \"13800138000\"",
+    "action": "通过接口找到 *userService 的 SendCode 实现。进入方法时，接收者 s 得到指向 S1 的指针，phone 得到本次手机号。",
+    "input": "隐式传入的接收者：指针 → S1；普通参数：字符串“13800138000”。",
+    "output": "还没返回，开始执行方法体。",
+    "reason": "s 负责告诉方法操作哪一个实例，phone 负责告诉方法本次发给谁。指针值也按值传递，复制的是指针值，不是整个实例。",
+    "values": [["u", "UserService", "携带 *userService → S1"], ["s", "*userService", "→ S1；本次方法的接收者"], ["phone", "string", "“13800138000”；本次参数"]], "count": 0, "log": ""
+  },
+  {
+    "title": "5 · 通过 s 修改实例里的计数",
+    "code": "s.sentCount++",
+    "action": "沿着 s 指向的地址，找到 S1 的 sentCount 字段，将它从 0 增加到 1。",
+    "input": "s 携带的指针 → S1，以及 S1 当前的 sentCount=0。",
+    "output": "实例 S1 的 sentCount 变为 1。",
+    "reason": "s 是会用到的：通过它访问、修改当前实例的数据。s.sentCount 可以理解为 (*s).sentCount 的方便写法。",
+    "values": [["s", "*userService", "→ S1；通过指针修改实例"], ["phone", "string", "“13800138000”；仍是本次手机号"]], "count": 1, "log": ""
+  },
+  {
+    "title": "6 · 读取实例字段，打印短信",
+    "code": "fmt.Printf(\"[%s] 模拟向 %s 发验证码 123456；累计 %d 次\\n\",\n    s.senderName, phone, s.sentCount)",
+    "action": "读取实例里的发送方名字和发送次数，结合本次 phone，打印一条模拟短信。",
+    "input": "s.senderName=“点评短信”、phone=“13800138000”、s.sentCount=1。",
+    "output": "打印下面这行文字。",
+    "reason": "实例字段是这个服务保存的数据；phone 是这次调用带来的数据。方法把两者组合起来完成动作。",
+    "values": [["s", "*userService", "→ S1；读取名字和计数"], ["phone", "string", "“13800138000”"]], "count": 1,
+    "log": "[点评短信] 模拟向 13800138000 发验证码 123456；累计 1 次"
+  },
+  {
+    "title": "7 · 返回 nil，回到 main",
+    "code": "return nil // main 中 err 为 nil",
+    "action": "SendCode 返回。此次方法里的 s 和 phone 结束作用域；实例 S1 的数据仍保留。",
+    "input": "无新输入。",
+    "output": "error 返回值为 nil，表示没有错误。",
+    "reason": "方法调用结束不等于服务实例被删除。main 的 u 仍携带指向 S1 的指针，后面可以继续调用。",
+    "values": [["u", "UserService", "仍携带 *userService → S1"], ["err", "error", "nil；不进入错误分支"]], "count": 1,
+    "log": "[点评短信] 模拟向 13800138000 发验证码 123456；累计 1 次"
+  },
+  {
+    "title": "8 · 第二次调用，换手机号",
+    "code": "u.SendCode(\"13900139000\")\n// 新一轮方法内：s → S1，phone = \"13900139000\"",
+    "action": "调用同一个 u 的 SendCode，再次进入方法。新的 s 参数仍指向 S1，新的 phone 参数是第二个手机号。",
+    "input": "接收者指针 → S1；字符串“13900139000”。",
+    "output": "方法再次开始执行；当前 sentCount 已经是 1。",
+    "reason": "这次没有调用 NewUserService，没有创建第二个服务。接收者参数可以再次携带同一个实例的地址。",
+    "values": [["u", "UserService", "同一个接口变量"], ["s", "*userService", "仍然 → S1"], ["phone", "string", "“13900139000”；本次新参数"]], "count": 1,
+    "log": "[点评短信] 模拟向 13800138000 发验证码 123456；累计 1 次"
+  },
+  {
+    "title": "9 · 再改同一实例，计数变成 2",
+    "code": "s.sentCount++\n// 然后用 s.senderName、phone、s.sentCount 打印",
+    "action": "再次沿着 s 找到 S1，计数从 1 增加到 2。读取第二个手机号，打印第二条模拟短信。",
+    "input": "S1 当前的 sentCount=1，phone=“13900139000”。",
+    "output": "同一实例的 sentCount=2，并打印第二条短信。",
+    "reason": "前一次修改的是实例数据，后一次访问的也是这份数据，因此能累积计数。",
+    "values": [["s", "*userService", "→ S1；再次修改同一实例"], ["phone", "string", "“13900139000”"]], "count": 2,
+    "log": "[点评短信] 模拟向 13800138000 发验证码 123456；累计 1 次\n[点评短信] 模拟向 13900139000 发验证码 123456；累计 2 次"
+  },
+  {
+    "title": "10 · 第二次返回，程序结束",
+    "code": "return nil // 第二次调用完成，main 随后结束",
+    "action": "返回 main。两次调用都操作 S1，得到累计两次的结果。",
+    "input": "无新输入。",
+    "output": "第二次 error 仍为 nil。",
+    "reason": "类型与方法先定义；创建函数在运行时创建一次实例；两次调用各自传入接收者和手机号。大小写只涉及可见性，不参与这些运行时动作。",
+    "values": [["u", "UserService", "携带 *userService → S1"], ["err", "error", "nil；第二次没有错误"]], "count": 2,
+    "log": "[点评短信] 模拟向 13800138000 发验证码 123456；累计 1 次\n[点评短信] 模拟向 13900139000 发验证码 123456；累计 2 次"
+  }
+]
+    </script>
+  </section>
+
+  <section id="receiver">
+    <span class="step">把刚才看到的动作，接回前端经验</span>
+    <h2>s 类似这次调用的 this</h2>
+    <pre><code>// TypeScript：用 this 访问当前实例的数据
+class SmsService {
+  sentCount = 0;
+  constructor(public senderName: string) {}
+  sendCode(phone: string) {
+    this.sentCount++;
+    console.log(this.senderName, phone, this.sentCount);
+  }
+}
+const u = new SmsService("点评短信");
+u.sendCode("13800138000");
+u.sendCode("13900139000");</code></pre>
+    <pre><code>// Go：用显式的接收者 s 访问当前实例的数据
+type userService struct {
+    senderName string
+    sentCount  int
+}
+func (s *userService) SendCode(phone string) error {
+    s.sentCount++
+    fmt.Println(s.senderName, phone, s.sentCount)
+    return nil
+}</code></pre>
+    <p>方法关联的是 <code>*userService</code> 这个类型。每个实例不会各自存一份 SendCode 函数；调用时，<code>s</code> 告诉同一份方法逻辑“这次操作哪个实例”。</p>
+    <p><code>s</code> 是一个指针变量，它的值指向服务实例。传入的不是 <code>p</code> 变量自身的地址 <code>&amp;p</code>，而是 <code>p</code> 所携带的指针值。Go 参数按值传递，指针参数也一样。</p>
+    <p>对具体指针 <code>p</code>，下面两种调用会给同一个方法传入相同的接收者和手机号：</p>
+    <pre><code>p.SendCode("13800138000")
+(*userService).SendCode(p, "13800138000")</code></pre>
+    <p class="muted">第二行是合法的 Go 方法表达式，明确写出了接收者参数；日常更常用第一行。TS 的 this 有自己的绑定规则，Go 的接收者通过方法声明明确指定。</p>
+    <div class="quiz" data-quiz data-correct="1"
+      data-success="对。同一个 u 仍携带 S1 的指针，两次方法调用操作同一实例。"
+      data-retry="第二次调用前，有没有再执行 NewUserService？再看第 8 步。"
+      aria-labelledby="sms-question">
+      <h3 id="sms-question">第一次后 sentCount 是 1。用同一个 u 再发一次，会变成什么？</h3>
+      <div class="quiz-options">
+        <button type="button" data-answer="0" aria-pressed="false">仍然为一</button>
+        <button type="button" data-answer="1" aria-pressed="false">累计为二</button>
+        <button type="button" data-answer="2" aria-pressed="false">归零为零</button>
+      </div>
+      <p class="feedback" data-feedback role="status" aria-live="polite"></p>
+      <p class="quiz-answer">答案：累计为二。请继续说明“为什么还是同一个实例”，用自己的话回答 Agent。</p>
+    </div>
+  </section>
+
+  <section id="names">
+    <span class="step">大小写单独看，不加入执行顺序</span>
+    <h2>大写和小写，只管其他包能不能用</h2>
+    <table>
+      <thead><tr><th>名字</th><th>是什么</th><th>其他包能否直接引用</th></tr></thead>
+      <tbody>
+        <tr><td><code>UserService</code></td><td>接口类型；由 interface 关键字定义</td><td>能，例如 service.UserService</td></tr>
+        <tr><td><code>userService</code></td><td>结构体类型；由 struct 关键字定义</td><td>不能直接写 service.userService</td></tr>
+        <tr><td><code>NewUserService</code></td><td>普通创建函数</td><td>能调用</td></tr>
+        <tr><td><code>SendCode</code></td><td>方法</td><td>通过接口或可用的具体值调用</td></tr>
+        <tr><td><code>senderName / sentCount</code></td><td>结构体字段</td><td>外包不能直接访问这些小写字段</td></tr>
+      </tbody>
+    </table>
+    <p>首字母大小写表示包级可见性。接口也可以用小写名字，结构体也可以用大写名字；项目里的 <code>SendCodeReq</code> 就是大写结构体类型。</p>
+    <p><code>UserService</code> 的普通接口定义可以理解为方法要求的集合。一个 <code>u UserService</code> 变量携带一个具体值，不是存了一组短信服务对象。可以先对照 TS 的结构类型约束理解接口要求。</p>
+  </section>
+
+  <section id="project">
+    <span class="step">同一条线，换成真实项目里的字段和参数</span>
+    <h2>项目中 s 读配置、用 Redis、写日志</h2>
+    <p>上面的 senderName / sentCount 是教学字段。本项目的 userService 嵌入公共 Service，实际保存配置、Redis 客户端、日志等依赖；没有教学例子的发送次数字段。</p>
+    <table class="execution-table">
+      <thead><tr><th>顺序</th><th>动作与传递内容</th></tr></thead>
+      <tbody>
+        <tr><td>启动 1</td><td><code>NewService(...)</code> 创建公共依赖对象：装入配置、Redis 客户端、数据库查询对象、日志等，返回 <code>*Service</code>。</td></tr>
+        <tr><td>启动 2</td><td><code>NewUserService(serviceService)</code> 接收这个公共依赖指针，把它存入新 userService 的 <code>Service</code> 字段，返回 UserService 接口值。</td></tr>
+        <tr><td>启动 3</td><td><code>NewUserHandler(..., userService)</code> 接收接口值，保存在 Handler 的 userService 字段里。此时还未处理手机号。</td></tr>
+        <tr><td>请求 1</td><td>浏览器发 <code>POST /user/code?phone=13800138000</code>。Gin 找到 UserHandler.SendCode。</td></tr>
+        <tr><td>请求 2</td><td>Handler 创建 <code>req</code> 结构体值，把 <code>&amp;req</code> 传给 ShouldBindQuery，让它填写 <code>req.Phone</code>。</td></tr>
+        <tr><td>请求 3</td><td><code>h.userService.SendCode(ctx.Request.Context(), &amp;req)</code> 通过接口调用：隐式接收者 s 是用户服务指针；显式参数是请求上下文和 req 的指针。</td></tr>
+        <tr><td>业务 1</td><td>用 <code>req.Phone</code> 校验手机号；用 <code>s.conf</code> 读取环境。当前非 prod 分支使用固定验证码 123456。</td></tr>
+        <tr><td>业务 2</td><td>用 <code>s.rdb.Set(ctx, key, code, ttl)</code> 将验证码写到 Redis；当前 key 为 <code>login:code:手机号</code>，TTL 为 2 分钟。</td></tr>
+        <tr><td>业务 3</td><td>用 <code>s.logger</code> 记录日志；返回 nil 或 error。Handler 根据返回值写出 HTTP 响应。</td></tr>
+      </tbody>
+    </table>
+    <p><code>s.conf / s.rdb / s.logger</code> 就是 s 在真实方法里的用途。<code>s</code> 指向服务依赖；<code>req</code> 指向本次请求数据，二者发挥不同作用。</p>
+    <p class="muted">项目目前没有接入真实第三方短信发送。上表基于当前源码；教学演示也只打印模拟短信。</p>
+    <p class="muted">源码：<a href="../../../cmd/server/wire/wire_gen.go">Wire 装配：30、41–42 行</a> · <a href="../../../internal/handler/user.go">Handler：34–53 行</a> · <a href="../../../internal/service/user.go">用户服务：66–113 行</a> · <a href="../../../internal/service/service.go">公共依赖：19–35 行</a>。</p>
+  </section>
+
+  <section id="run">
+    <h2>用真正的 Go 打印一次地址</h2>
+    <p><a href="../examples/sms-flow/main.go">完整源码</a>只用标准库。额外的日志会打印 p、u 的具体值和 s 的地址，便于验证它们指向同一个实例。</p>
+    <pre><code>go run /Users/bytedance/code/Easton/dianping-go/docs/learning/examples/sms-flow/main.go</code></pre>
+    <p class="muted">当前本机 goenv 选定的项目版本 1.24.4 未安装，已用本机已有的 Go 1.20.14 验证本例。下面这条命令仅为本次运行选择版本并跳过项目模块，不修改项目配置，也不需要 Redis：</p>
+    <pre><code>GOENV_VERSION=1.20.14 GO111MODULE=off go run /Users/bytedance/code/Easton/dianping-go/docs/learning/examples/sms-flow/main.go</code></pre>
+    <p>本次实际运行时，地址如下。下次运行数字可以变化；关键是同一次运行中 p、u 携带的指针和 s 指向同一个实例：</p>
+    <pre><code>创建实例：p=0x14000114030，sentCount=0
+main 拿到 u：携带指针=0x14000114030
+第一次进入方法：s=0x14000114030，phone="13800138000"，sentCount=0
+第二次进入方法：s=0x14000114030，phone="13900139000"，sentCount=1
+最终模拟输出：累计 2 次</code></pre>
+    <details>
+      <summary>复习时看：去掉观察日志后的完整骨架</summary>
+      <pre><code>package main
+
+import "fmt"
+
+type UserService interface {
+    SendCode(phone string) error
+}
+type userService struct {
+    senderName string
+    sentCount  int
+}
+func NewUserService(name string) UserService {
+    p := &amp;userService{senderName: name}
+    return p
+}
+func (s *userService) SendCode(phone string) error {
+    s.sentCount++
+    fmt.Println(s.senderName, phone, s.sentCount)
+    return nil
+}
+func main() {
+    u := NewUserService("点评短信")
+    if err := u.SendCode("13800138000"); err != nil {
+        panic(err)
+    }
+    if err := u.SendCode("13900139000"); err != nil {
+        panic(err)
+    }
+}</code></pre>
+    </details>
+  </section>
+
+  <footer>
+    <p>这次先解释一件事：调用时 s 和 phone 各自告诉方法什么，第二次为什么能接着第一次的计数。</p>
+    <p>继续卡住时，把“第几步”和那行代码发给 Agent。页面练习不会自动标记学习能力通过。</p>
+    <p>原理出处：<a href="https://go.dev/tour/methods/4">Go 官方：指针接收者</a> · <a href="https://go.dev/tour/methods/9">接口与具体值</a> · <a href="https://go.dev/doc/effective_go#composite_literals">创建函数与取地址</a> · <a href="https://go.dev/doc/effective_go#names">包外可见性</a>。</p>
+    <p><a href="0001-user-service-interface.html">概念小课</a> · <a href="../reference/user-service-interface.html">复习速查</a> · <a href="../README.md">学习总览</a></p>
+  </footer>
+</main>
+</body>
+</html>

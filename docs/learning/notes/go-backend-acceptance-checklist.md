@@ -9,6 +9,12 @@
 >
 > 判定方式：每条都要能同时做到「写出来 + 讲清楚为什么 + 在项目里指出出处」。
 
+这份清单用于课后复习和验收。首次学习时，先理解一个小例子，再回到项目写法；每次只推进一个知识点。
+
+接口、结构体和构造函数还看不懂时，先读 [小课 01：谁规定能力，谁真正干活？](../lessons/0001-user-service-interface.html)，按「TS 对象 → Go 类型与方法 → 创建并返回 → 项目依赖」逐步展开，配有即时反馈练习。复习时看 [速查页](../reference/user-service-interface.html)。
+
+想看每一步执行动作、传入值，以及 s 如何读写实例，用 [发短信执行演示](../lessons/0002-sms-execution.html)。大小写放到执行链理解后再单独看。
+
 ---
 
 ## 0. 总原则
@@ -74,6 +80,8 @@ if err != nil {
 项目锚点：`internal/service/shop.go`、`internal/service/blog.go`。
 
 ### 2.2 隐式接口实现
+
+首次阅读入口：[小课 01](../lessons/0001-user-service-interface.html#familiar)。先能区分「接口约定、具体实现、创建对象」三个角色，再做本节默写和 `&` 的自查题。
 
 先用大白话：
 

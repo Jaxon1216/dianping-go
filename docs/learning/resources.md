@@ -26,6 +26,10 @@
 
 | 资料 | 用途 |
 | --- | --- |
+| [A Tour of Go：接口](https://go.dev/tour/methods/9) | 核对接口值携带具体实现，以及指针接收者下值类型不满足接口的示例 |
+| [A Tour of Go：隐式实现接口](https://go.dev/tour/methods/10) | 理解 Go 不需要 implements，方法满足要求即可实现接口 |
+| [Effective Go：构造函数与字面量](https://go.dev/doc/effective_go#composite_literals) | 解释 `&T{Field: value}`、创建函数和返回局部对象地址 |
+| [Effective Go：Embedding](https://go.dev/doc/effective_go#embedding) | 解释嵌入字段的默认字段名、字段/方法提升及与子类继承的区别 |
 | [Google Wire README](https://github.com/google/wire/blob/main/README.md) | Wire 是无反射的代码生成工具；项目已停止维护，只作为本仓库既有方案学习 |
 | [Gin Quickstart](https://gin-gonic.com/en/docs/quickstart/) | 对照 `gin.Default`、路由注册、监听启动 |
 | [go-redis 文档](https://redis.gg/guide-go/) | 对照 `Set`、`HSet`、`ZAdd`、`XReadGroup`、`GeoSearch` 的参数语义 |
