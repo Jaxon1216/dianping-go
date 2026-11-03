@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>第一课：启动、分层与依赖组装</title>
+    <link rel="stylesheet" href="../assets/teach.css" />
+  </head>
+  <body>
+    <nav class="topbar" aria-label="课程导航">
+      <div class="shell">
+        <span class="crumb">Go 点评源码课 / Lesson 01</span>
+        <span class="meta">建议用时：15 分钟</span>
+      </div>
+    </nav>
+
+    <header class="lesson-head">
+      <div class="shell">
+        <p class="eyebrow">Startup and dependency assembly</p>
+        <h1>从一条启动命令，看懂对象如何被创建并连起来</h1>
+        <p class="lede">
+          本课只解决一个问题：执行 <code>go run ./cmd/server</code>
+          后，在第一个 HTTP 请求到来之前，程序到底做了什么？
+        </p>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="lesson-section" id="goal">
+        <h2>完成标准</h2>
+        <ul class="outcomes">
+          <li>能把启动期和请求期分开，不再把“注册路由”误认为“处理请求”。</li>
+          <li>能解释 <code>wire.go</code> 与 <code>wire_gen.go</code> 的不同职责。</li>
+          <li>能从 <code>main</code> 追到 <code>ListenAndServe</code> 与 5 秒停机窗口。</li>
+          <li>能指出当前资源生命周期尚未闭环的源码证据。</li>
+        </ul>
+        <div class="core-idea">
+          <strong>先记一句</strong>
+          Wire 不是运行时容器。它提前生成一段普通 Go
+          代码，程序启动时只按这段代码创建一次依赖。
+        </div>
+      </section>
+
+      <section class="lesson-section" id="bridge">
+        <h2>1. 先搬用你熟悉的 Express 模型</h2>
+        <div class="compare">
+          <article>
+            <h3>Express 中常见的手工组装</h3>
+            <pre><code>const redis = createRedis(config)
+const db = createDb(config)
+const service = createService(db, redis)
+const handler = createHandler(service)
+
+app.get("/user/:id", handler.getUser)
+app.listen(8081)</code></pre>
+          </article>
+          <article>
+            <h3>本项目生成后的 Go 组装</h3>
+            <pre><code>client := service.NewRedis(conf)
+db := service.NewDB(conf, logger)
+query := service.NewQuery(db)
+svc := service.NewService(
+  logger, conf, query, client, redsync,
+)
+httpServer := server.NewHTTPServer(...)
+app := newApp(httpServer)</code></pre>
+          </article>
+        </div>
+        <p class="code-caption">
+          相同点：都在监听端口前创建共享对象并注册路由。不同点：Go
+          用静态类型检查构造参数，Wire 只是替你生成右侧这段连接代码。
+        </p>
+      </section>
+
+      <section class="lesson-section" id="two-phases">
+        <h2>2. 最重要的切分：启动期 vs 请求期</h2>
+        <div class="phase-grid">
+          <article class="phase" data-kind="startup">
+            <h3><span class="label">启动期</span>只执行一次</h3>
+            <ul>
+              <li>读取配置，创建 logger。</li>
+              <li>连接 Redis 和 DB，创建 Query。</li>
+              <li>创建 Service、Handler 和 HTTP Server。</li>
+              <li>登记中间件与路由。</li>
+              <li>监听端口并等待请求。</li>
+            </ul>
+          </article>
+          <article class="phase" data-kind="request">
+            <h3><span class="label request">请求期</span>每次请求执行</h3>
+            <ul>
+              <li>Gin 根据方法和路径匹配路由。</li>
+              <li>依次执行全局与局部中间件。</li>
+              <li>调用已保存的 Handler 方法。</li>
+              <li>Handler 调用已注入的 Service。</li>
+              <li>写回 HTTP 响应。</li>
+            </ul>
+          </article>
+        </div>
+        <div class="risk-note">
+          <strong>常见误区</strong>
+          <code>s.GET("/user/:id", userHandler.QueryUserByID)</code>
+          在启动期登记映射；只有请求到来后，右侧方法才会执行。
+        </div>
+      </section>
+
+      <section class="lesson-section" id="source-trace">
+        <h2>3. 按真实执行顺序读源码</h2>
+        <ol class="trace">
+          <li>
+            <p>
+              <strong>入口准备。</strong>
+              <a href="../cmd/server/main.go">main.go:39-56</a>
+              解析 <code>-conf</code>，读取 Viper 配置，创建日志，然后调用
+              <code>wire.NewWire(conf, logger)</code>。
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>查看生成代码。</strong>
+              <a href="../cmd/server/wire/wire_gen.go">wire_gen.go:24-51</a>
+              是正常构建真正编译的文件。这里可以逐行看到 Redis、DB、Query、
+              Service、Handler、Server 和 App 的创建。
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>基础设施 fail-fast。</strong>
+              <a href="../internal/service/service.go">service.go:37-68</a>
+              连接 DB；Redis 创建后立即 <code>PING</code>。失败时
+              <code>panic</code>，应用不会带病启动。
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>接口隔离上层。</strong>
+              <a href="../internal/service/user.go">user.go:21-86</a>
+              的构造器返回 <code>UserService</code> 接口；
+              <a href="../internal/handler/user.go">handler/user.go:11-23</a>
+              只保存这个能力集合，不依赖具体 <code>userService</code> 类型。
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>注册 HTTP 规则。</strong>
+              <a href="../internal/server/http.go">internal/server/http.go:24-185</a>
+              创建 Gin Engine，挂全局中间件，并登记所有路由。此时还没监听端口。
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>进入运行期。</strong>
+              <a href="../pkg/app/app.go">app.go:39-73</a>
+              在 goroutine 中调用 Server 的 <code>Start</code>，主 goroutine
+              等待退出信号。
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>真正监听。</strong>
+              <a href="../pkg/server/http/http.go">pkg/server/http/http.go:43-62</a>
+              创建标准库 <code>http.Server</code>，再调用
+              <code>ListenAndServe</code>。
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="lesson-section" id="wire">
+        <h2>4. Wire：声明文件不等于执行文件</h2>
+        <div class="compare">
+          <article>
+            <h3><code>wire.go</code>：告诉生成器“有什么”</h3>
+            <pre><code>var serviceSet = wire.NewSet(
+  service.NewDB,
+  service.NewQuery,
+  service.NewRedis,
+  service.NewService,
+  service.NewUserService,
+)</code></pre>
+            <p>
+              这是 provider 集合。顺序不是“强制执行清单”，依赖关系来自每个函数的
+              参数类型和返回类型。
+            </p>
+          </article>
+          <article>
+            <h3><code>wire_gen.go</code>：程序实际“怎么做”</h3>
+            <pre><code>client := service.NewRedis(conf)
+db := service.NewDB(conf, logger)
+query := service.NewQuery(db)
+redsync := service.NewRedSync(client)
+service := service.NewService(
+  logger, conf, query, client, redsync,
+)</code></pre>
+            <p>
+              这是普通 Go 代码。运行时没有容器查找、装饰器扫描或反射注入。
+            </p>
+          </article>
+        </div>
+        <div class="core-idea">
+          <strong>构建标签是关键</strong>
+          <code>wire.go</code> 带 <code>//go:build wireinject</code>；
+          <code>wire_gen.go</code> 带 <code>//go:build !wireinject</code>。
+          正常构建选择生成文件，运行时不会执行 <code>wire.Build</code> 里的
+          <code>panic</code>。
+        </div>
+      </section>
+
+      <section class="lesson-section" id="ownership">
+        <h2>5. “谁拥有谁”要从字段与构造参数看</h2>
+        <pre><code>Service
+  ├─ query  *query.Query
+  ├─ rdb    *redis.Client
+  └─ rs     *redsync.Redsync
+
+UserHandler
+  └─ userService service.UserService
+
+App
+  └─ servers []server.Server</code></pre>
+        <p>
+          依赖方向是 Handler → Service → Query/Redis。页面不会直接操作
+          DB，Handler 也不应该承载业务规则。接口只隔离“能力边界”，并不意味着每一层都必须再包一层接口。
+        </p>
+      </section>
+
+      <section class="lesson-section" id="shutdown">
+        <h2>6. 退出链路与当前边界</h2>
+        <pre><code>SIGINT / SIGTERM
+  → App.Run 的 signal channel 收到信号
+  → 依次调用 srv.Stop(ctx)
+  → HTTP Server.Shutdown(5 秒超时)
+  → 停止接收新连接并等待活动请求</code></pre>
+        <ul class="risk-list">
+          <li>
+            <strong>确定边界：</strong>
+            <code>wire_gen.go</code> 返回的 <code>cleanup</code> 当前是空函数，
+            没有关闭 DB 与 Redis。
+          </li>
+          <li>
+            <strong>确定风险：</strong>
+            秒杀消费者在构造器里启动无限 goroutine，并使用
+            <code>context.Background()</code>，没有接入 App 生命周期。
+          </li>
+          <li>
+            <strong>确定风险：</strong>
+            Lua 文件读取失败时构造器返回 <code>nil</code> 接口，没有返回
+            error，错误会延后暴露。
+          </li>
+          <li>
+            <strong>表达边界：</strong>
+            因此只能说“HTTP 有 5 秒优雅停机”，不能说“整个应用已经优雅退出”。
+          </li>
+        </ul>
+      </section>
+
+      <section class="lesson-section" id="quiz">
+        <h2>7. 三道主动回忆题</h2>
+        <div class="quiz">
+          <article
+            class="question"
+            data-quiz-question
+            data-explanation="NewWire 在 main 中调用，生成代码在启动阶段创建共享依赖。"
+          >
+            <p>1. <code>wire.NewWire(conf, logger)</code> 何时执行？</p>
+            <div class="options">
+              <button class="option" data-answer="wrong">每请求执行一次</button>
+              <button class="option" data-answer="correct">启动时执行一次</button>
+            </div>
+            <div class="feedback" data-feedback aria-live="polite"></div>
+          </article>
+
+          <article
+            class="question"
+            data-quiz-question
+            data-explanation="GET 在这里把方法、路径和处理函数保存到 Gin 的路由树。"
+          >
+            <p>2. 启动时调用 <code>s.GET(...)</code> 的直接作用是什么？</p>
+            <div class="options">
+              <button class="option" data-answer="correct">登记路由规则</button>
+              <button class="option" data-answer="wrong">立刻处理请求</button>
+            </div>
+            <div class="feedback" data-feedback aria-live="polite"></div>
+          </article>
+
+          <article
+            class="question"
+            data-quiz-question
+            data-explanation="生成文件返回 func() {}，目前没有 DB.Close 或 Redis.Close。"
+          >
+            <p>3. 当前 Wire 返回的 <code>cleanup</code> 做了什么？</p>
+            <div class="options">
+              <button class="option" data-answer="wrong">已关闭连接池</button>
+              <button class="option" data-answer="correct">实际为空函数</button>
+            </div>
+            <div class="feedback" data-feedback aria-live="polite"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="lesson-section">
+        <div class="next-step">
+          <h2>口头复述任务</h2>
+          <p>
+            不看上文，用 5 句话回答：“执行 <code>go run ./cmd/server</code>
+            后，到可以接收请求为止发生了什么？”
+          </p>
+          <p>
+            把答案发给你的 AI 老师。老师会只纠正链路、时机和依赖方向，不要求背 API。
+          </p>
+        </div>
+      </section>
+
+      <section class="lesson-section" id="sources">
+        <h2>推荐的一手资料</h2>
+        <ul class="source-trail">
+          <li>
+            <a href="https://github.com/google/wire/blob/main/README.md"
+              >Google Wire README</a
+            >：确认 Wire 是无运行时状态、无反射的代码生成工具。
+          </li>
+          <li>
+            <a href="https://pkg.go.dev/net/http#Server.Shutdown"
+              >Go net/http Server.Shutdown</a
+            >：核对优雅停机的标准库契约。
+          </li>
+          <li>
+            <a href="../reference/startup-dependency-cheatsheet.html"
+              >启动与依赖组装速查页</a
+            >：复习时只看这一页。
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell">
+        Lesson 01 · 基于当前仓库源码生成 · 结论以
+        <code>wire_gen.go</code> 和可编译代码为准
+      </div>
+    </footer>
+    <script src="../assets/quiz.js"></script>
+  </body>
+</html>
