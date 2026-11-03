@@ -2,6 +2,9 @@
 
 ## 2026-11-03
 
+- 新增 `docs/learning/notes/go-backend-acceptance-checklist.md`：把「命令 / Go 基础 / Gin / GORM Gen / Redis」整理成可勾选的验收标准，并补充隐式接口、方法集、Handler 签名和 `func (h *X) M(ctx)` 语法的解释。
+- 更新 `docs/learning/notes.md` 索引，加入验收标准专题入口。
+
 - 新增 `docs/learning/roadmap.md`：把 Java 版复盘原文提炼成六阶段学习路线，每阶段给出源码入口、必答问题和完成标准，并标注原文三处不能照搬的结论。
 - 新增 `docs/learning/resources.md`：统一保存外部资料与原复盘链接，明确「外部资料只用于解释，不作为项目事实」的使用边界。
 - 将 10 篇源码课程从 `interview-prep/dianping-go/guide-fullstack/` 迁入 `docs/learning/courses/`，并修正课程内指向导学与面经的相对链接。
