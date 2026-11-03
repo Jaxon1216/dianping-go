@@ -5,3 +5,5 @@ storage/images
 deploy/docker-compose/conf
 deploy/docker-compose/data
 tokens.txt
+.trae-html-share-packages/
+diagrams/

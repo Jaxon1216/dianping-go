@@ -6,6 +6,7 @@
 
 - **Go**：package、接口、错误、context 和项目分层。
   - 专题：[Go 基础 01：指针 / 接口 / nil / error / panic](notes/go-basics-01-pointer-interface-error.md)（第 1 轮对话沉淀，STAR 格式）。
+  - 专题：[项目架构判断：分层架构不等于 DDD](notes/architecture-layered-vs-ddd.md)（基于真实依赖方向判断）。
 - **Gin/HTTP**：路由、中间件、请求和响应。
   - 专题：[前端请求全链路映射与 Go GMP 调度模型](notes/go-web-request-flow-and-gmp.md)（Express 映射，GMP 模型机制）。
 - **MySQL/GORM**：SQL、GORM Gen、模型和查询。
